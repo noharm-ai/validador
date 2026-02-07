@@ -15,237 +15,158 @@
     { key: "frequencia", label: "Frequencia" },
   ];
 
-  const getRequiredFields = (fileSchema) => {
-    if (fileSchema.requiredGroups) {
-      const all = new Set();
-      Object.values(fileSchema.requiredGroups).forEach((group) => {
-        group.forEach((field) => all.add(field));
-      });
-      return Array.from(all);
-    }
-    return fileSchema.required || [];
-  };
-
-  const SCHEMAS = {
-    mv: {
-      label: "MV",
-      files: {
-        prescricoes: {
-          required: [
-            "FKHOSPITAL",
-            "FKSETOR",
-            "FKPRESCRICAO",
-            "FKPESSOA",
-            "NRATENDIMENTO",
-            "DTPRESCRICAO",
-            "DTVIGENCIA",
-            "FKPRESMED",
-            "FKUNIDADEMEDIDA",
-            "FKMEDICAMENTO",
-            "NOMEMEDICAMENTO",
+  const NOHARM_SCHEMA = {
+    label: "NoHarm",
+    files: {
+      prescricoes: {
+        required: [
+          "ALERGIA",
+          "COMPLEMENTO",
+          "CONVENIO",
+          "DOSE",
+          "DTCRIACAO_ORIGEM",
+          "DTPRESCRICAO",
+          "DTSUSPENSAO",
+          "DTVIGENCIA",
+          "FKFREQUENCIA",
+          "FKMEDICAMENTO",
+          "FKPESSOA",
+          "FKPRESCRICAO",
+          "FKPRESMED",
+          "FKSETOR",
+          "FKUNIDADEMEDIDA",
+          "HORARIO",
+          "LEITO",
+          "NRATENDIMENTO",
+          "ORIGEM",
+          "PERIODO",
+          "PERIODO_TOTAL",
+          "PRESCRITOR",
+          "SLACM",
+          "SLAGRUPAMENTO",
+          "SLDOSAGEM",
+          "SLETAPAS",
+          "SLTIPODOSAGEM",
+          "VIA",
+        ],
+        allowed: [
+          "ALERGIA",
+          "COMPLEMENTO",
+          "CONVENIO",
+          "DOSE",
+          "DS_UNIDADE_MEDIDA",
+          "DTATUALIZACAO",
+          "DTCRIACAO_ORIGEM",
+          "DTPRESCRICAO",
+          "DTSUSPENSAO",
+          "DTVIGENCIA",
+          "FKFREQUENCIA",
+          "FKHOSPITAL",
+          "FKMEDICAMENTO",
+          "FKPESSOA",
+          "FKPRESCRICAO",
+          "FKPRESMED",
+          "FKSETOR",
+          "FKUNIDADEMEDIDA",
+          "FREQUENCIADIA",
+          "HORARIO",
+          "LEITO",
+          "NOMEMEDICAMENTO",
+          "NRATENDIMENTO",
+          "ORIGEM",
+          "PERIODO",
+          "PERIODO_TOTAL",
+          "PRESCRITOR",
+          "PRONTUARIO",
+          "SLACM",
+          "SLAGRUPAMENTO",
+          "SLDOSAGEM",
+          "SLETAPAS",
+          "SLHORAFASE",
+          "SLTEMPOAPLICACAO",
+          "SLTIPODOSAGEM",
+          "VIA",
+        ],
+        key: ["FKPRESMED"],
+        typeHints: {
+          number: [
             "DOSE",
-            "FKFREQUENCIA",
-            "VIA",
-            "COMPLEMENTO",
-            "DTSUSPENSAO",
-            "ORIGEM",
-            "SLAGRUPAMENTO",
-            "SLETAPAS",
-            "SLDOSAGEM",
-            "SLTIPODOSAGEM",
-            "SLACM",
-            "HORARIO",
-            "LEITO",
-            "PRESCRITOR",
-            "DTCRIACAO_ORIGEM",
-            "CONVENIO",
-            "PERIODO",
-            "PERIODO_TOTAL",
-            "ALERGIA",
-          ],
-          key: ["FKPRESMED"],
-          typeHints: {
-            number: [
-              "FKHOSPITAL",
-              "FKSETOR",
-              "FKPRESCRICAO",
-              "FKPESSOA",
-              "NRATENDIMENTO",
-              "FKPRESMED",
-              "DOSE",
-              "SLAGRUPAMENTO",
-              "SLETAPAS",
-              "SLDOSAGEM",
-              "PERIODO",
-              "PERIODO_TOTAL",
-            ],
-            date: ["DTPRESCRICAO", "DTVIGENCIA", "DTSUSPENSAO", "DTCRIACAO_ORIGEM"],
-          },
-          refs: {
-            FKSETOR: "setores",
-            FKMEDICAMENTO: "medicamentos",
-            FKUNIDADEMEDIDA: "unidades",
-            FKFREQUENCIA: "frequencia",
-          },
-        },
-        medicamentos: {
-          required: [
             "FKHOSPITAL",
-            "ORIGEM",
             "FKMEDICAMENTO",
-            "NOME",
-            "NAOPADRONIZADO",
-            "FKUNIDADEMEDIDACUSTO",
-            "CUSTO_PADRAO",
-            "VL_FATOR",
-            "CUSTO",
-          ],
-          key: ["FKMEDICAMENTO"],
-          typeHints: {
-            number: ["FKHOSPITAL", "FKMEDICAMENTO", "CUSTO_PADRAO", "VL_FATOR", "CUSTO"],
-          },
-        },
-        setores: {
-          required: ["FKHOSPITAL", "FKSETOR", "NOME"],
-          key: ["FKSETOR"],
-          typeHints: { number: ["FKHOSPITAL", "FKSETOR"] },
-        },
-        unidades: {
-          required: ["FKHOSPITAL", "FKUNIDADEMEDIDA", "NOME"],
-          key: ["FKUNIDADEMEDIDA"],
-          typeHints: { number: ["FKHOSPITAL"] },
-        },
-        frequencia: {
-          required: ["FKHOSPITAL", "FKFREQUENCIA", "NOME"],
-          key: ["FKFREQUENCIA"],
-          typeHints: { number: ["FKHOSPITAL"] },
-        },
-      },
-    },
-    tasy: {
-      label: "Tasy",
-      files: {
-        prescricoes: {
-          required: [
-            "ORIGEM",
-            "NRATENDIMENTO",
-            "FKPRESCRICAO",
-            "SLAGRUPAMENTO",
-            "SLACM",
-            "SLETAPAS",
-            "SLHORAFASE",
-            "SLTEMPOAPLICACAO",
-            "SLDOSAGEM",
-            "SLTIPODOSAGEM",
-            "FKPRESMED",
             "FKPESSOA",
+            "FKPRESCRICAO",
+            "FKPRESMED",
             "FKSETOR",
-            "DTPRESCRICAO",
-            "DTCRIACAO_ORIGEM",
-            "DTATUALIZACAO",
-            "DTSUSPENSAO",
-            "DTVIGENCIA",
-            "HORARIO",
             "FREQUENCIADIA",
-            "COMPLEMENTO",
-            "FKMEDICAMENTO",
-            "DOSE",
-            "FKUNIDADEMEDIDA",
-            "DS_UNIDADE_MEDIDA",
-            "FKFREQUENCIA",
-            "VIA",
-            "LEITO",
-            "PRONTUARIO",
-            "PRESCRITOR",
-            "ALERGIA",
+            "NRATENDIMENTO",
             "PERIODO",
             "PERIODO_TOTAL",
-            "CONVENIO",
+            "SLAGRUPAMENTO",
+            "SLDOSAGEM",
+            "SLETAPAS",
           ],
-          key: ["FKPRESMED"],
-          typeHints: {
-            number: [
-              "NRATENDIMENTO",
-              "FKPRESCRICAO",
-              "FKPRESMED",
-              "FKPESSOA",
-              "FKSETOR",
-              "FREQUENCIADIA",
-              "FKMEDICAMENTO",
-              "DOSE",
-              "PERIODO",
-              "PERIODO_TOTAL",
-            ],
-            date: ["DTPRESCRICAO", "DTCRIACAO_ORIGEM", "DTATUALIZACAO", "DTSUSPENSAO", "DTVIGENCIA"],
-          },
-          refs: {
-            FKSETOR: "setores",
-            FKMEDICAMENTO: "medicamentos",
-            FKUNIDADEMEDIDA: "unidades",
-            FKFREQUENCIA: "frequencia",
-          },
+          date: ["DTATUALIZACAO", "DTCRIACAO_ORIGEM", "DTPRESCRICAO", "DTSUSPENSAO", "DTVIGENCIA"],
+          boolean: [],
         },
-        medicamentos: {
-          required: [
-            "FKHOSPITAL",
-            "FKMEDICAMENTO",
-            "NOME",
-            "NAOPADRONIZADO",
-            "FKUNIDADEMEDIDACUSTO",
-            "CUSTO",
-          ],
-          key: ["FKMEDICAMENTO"],
-          typeHints: {
-            number: ["FKHOSPITAL", "FKMEDICAMENTO", "CUSTO"],
-          },
+        refs: {
+          FKSETOR: "setores",
+          FKMEDICAMENTO: "medicamentos",
+          FKUNIDADEMEDIDA: "unidades",
+          FKFREQUENCIA: "frequencia",
         },
-        setores: {
-          required: ["FKHOSPITAL", "FKSETOR", "NOME"],
-          key: ["FKSETOR"],
-          typeHints: { number: ["FKHOSPITAL", "FKSETOR"] },
+      },
+      medicamentos: {
+        required: ["CUSTO", "FKHOSPITAL", "FKMEDICAMENTO", "FKUNIDADEMEDIDACUSTO", "NAOPADRONIZADO", "NOME"],
+        allowed: [
+          "CUSTO",
+          "CUSTO_PADRAO",
+          "FKHOSPITAL",
+          "FKMEDICAMENTO",
+          "FKUNIDADEMEDIDACUSTO",
+          "NAOPADRONIZADO",
+          "NOME",
+          "ORIGEM",
+          "VL_FATOR",
+        ],
+        key: ["FKMEDICAMENTO"],
+        typeHints: {
+          number: ["CUSTO", "CUSTO_PADRAO", "FKHOSPITAL", "FKMEDICAMENTO", "VL_FATOR"],
+          date: [],
+          boolean: [],
         },
-        unidades: {
-          required: ["FKHOSPITAL", "FKUNIDADEMEDIDA", "NOME"],
-          key: ["FKUNIDADEMEDIDA"],
-          typeHints: { number: ["FKHOSPITAL"] },
+      },
+      setores: {
+        required: ["FKHOSPITAL", "FKSETOR", "NOME"],
+        allowed: ["FKHOSPITAL", "FKSETOR", "NOME"],
+        key: ["FKSETOR"],
+        typeHints: {
+          number: ["FKHOSPITAL", "FKSETOR"],
+          date: [],
+          boolean: [],
         },
-        frequencia: {
-          required: ["FKHOSPITAL", "FKFREQUENCIA", "NOME"],
-          key: ["FKFREQUENCIA"],
-          typeHints: { number: ["FKHOSPITAL"] },
+      },
+      unidades: {
+        required: ["FKHOSPITAL", "FKUNIDADEMEDIDA", "NOME"],
+        allowed: ["FKHOSPITAL", "FKUNIDADEMEDIDA", "NOME"],
+        key: ["FKUNIDADEMEDIDA"],
+        typeHints: {
+          number: ["FKHOSPITAL"],
+          date: [],
+          boolean: [],
+        },
+      },
+      frequencia: {
+        required: ["FKFREQUENCIA", "FKHOSPITAL", "NOME"],
+        allowed: ["FKFREQUENCIA", "FKHOSPITAL", "NOME"],
+        key: ["FKFREQUENCIA"],
+        typeHints: {
+          number: ["FKHOSPITAL"],
+          date: [],
+          boolean: [],
         },
       },
     },
   };
-
-  const mergeTypeHints = (a = {}, b = {}) => {
-    const mergeList = (key) => Array.from(new Set([...(a[key] || []), ...(b[key] || [])]));
-    return {
-      number: mergeList("number"),
-      date: mergeList("date"),
-      boolean: mergeList("boolean"),
-    };
-  };
-
-  const NOHARM_SCHEMA = (() => {
-    const files = {};
-    FILE_TYPES.forEach((file) => {
-      const mv = SCHEMAS.mv.files[file.key];
-      const tasy = SCHEMAS.tasy.files[file.key];
-      const mvFields = getRequiredFields(mv);
-      const tasyFields = getRequiredFields(tasy);
-      const allowed = Array.from(new Set([...mvFields, ...tasyFields]));
-      const required = mvFields.filter((field) => tasyFields.includes(field));
-      files[file.key] = {
-        required,
-        allowed,
-        key: mv.key || tasy.key,
-        typeHints: mergeTypeHints(mv.typeHints, tasy.typeHints),
-        refs: { ...(mv.refs || {}), ...(tasy.refs || {}) },
-      };
-    });
-    return { label: "NoHarm", files };
-  })();
 
   const MAX_ERRORS = 200;
   const NORMALIZATION_MODE = "lower";
