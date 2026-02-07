@@ -1,0 +1,13 @@
+[
+  {
+    "FKHOSPITAL": 1,
+    "ORIGEM": "Medicamentos",
+    "FKMEDICAMENTO": 2001,
+    "NOME": "AMOXICILINA 500MG",
+    "NAOPADRONIZADO": "0",
+    "FKUNIDADEMEDIDACUSTO": "MG",
+    "CUSTO_PADRAO": 1.5,
+    "VL_FATOR": 1,
+    "CUSTO": 1.5
+  }
+]

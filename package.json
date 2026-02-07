@@ -1,0 +1,11 @@
+{
+  "name": "noharm-validador",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node tests/validate_examples.js"
+  },
+  "dependencies": {
+    "papaparse": "^5.4.1"
+  }
+}
