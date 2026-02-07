@@ -9,16 +9,16 @@ Validador web standalone para arquivos CSV/JSON no padrao NoHarm.
 - Faz validacao cruzada entre chaves (ex.: prescricoes -> medicamentos, setores, unidades, frequencia).
 
 ## Regras do padrao NoHarm
-- Campos esperados sao baseados nas views MV e Tasy.
-- Campos obrigatorios = intersecao MV + Tasy.
-- Campos permitidos = uniao MV + Tasy.
+- Campos esperados sao baseados nas views padrão da NoHarm.
+- Campos obrigatorios
+- Campos permitidos
 - Qualquer campo fora da uniao gera erro.
 
 ## Como rodar local
 Precisa de um servidor HTTP (nao funciona via file:// por causa do Babel).
 
 ```bash
-cd /home/henrique/Documentos/validador
+cd /home/user/Documentos/validador
 python3 -m http.server 8000
 ```
 
