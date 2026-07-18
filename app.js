@@ -39,6 +39,7 @@ const FILE_TYPES = Validator
   ? Validator.FILE_TYPES
   : [
       { key: "prescricoes", label: "Prescricoes" },
+      { key: "pessoa", label: "Pessoa/Atendimento" },
       { key: "medicamentos", label: "Medicamentos" },
       { key: "setores", label: "Setores" },
       { key: "unidades", label: "Unidades" },
@@ -57,6 +58,7 @@ const formatBytes = (bytes) => {
 function App() {
   const [files, setFiles] = useState({
     prescricoes: null,
+    pessoa: null,
     medicamentos: null,
     setores: null,
     unidades: null,
@@ -84,6 +86,7 @@ function App() {
 
   const fileAliases = {
     prescricoes: ["prescricao", "prescricoes", "presc"],
+    pessoa: ["pessoa", "pessoas", "paciente", "pacientes", "atendimento", "atendimentos"],
     medicamentos: ["medicamento", "medicamentos", "med"],
     setores: ["setor", "setores"],
     unidades: ["unidade", "unidades", "unidademedida", "uni"],
@@ -139,6 +142,7 @@ function App() {
   const clearFiles = () => {
     setFiles({
       prescricoes: null,
+      pessoa: null,
       medicamentos: null,
       setores: null,
       unidades: null,
@@ -452,8 +456,8 @@ function App() {
           </Row>
 
           <div className="nh-footer-note">
-            Validacao semantica inclui chaves duplicadas e referencias cruzadas entre prescricoes, medicamentos, setores,
-            unidades e frequencia.
+            Validacao semantica inclui chaves duplicadas e referencias cruzadas entre prescricoes, pessoa/atendimento,
+            medicamentos, setores, unidades e frequencia.
           </div>
         </Content>
       </Layout>

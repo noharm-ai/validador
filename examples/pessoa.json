@@ -1,0 +1,23 @@
+[
+  {
+    "FKHOSPITAL": 1,
+    "FKPESSOA": 5001,
+    "NOME": "FULANO DE TAL",
+    "NRATENDIMENTO": 7001,
+    "DTNASCIMENTO": "1980-05-10",
+    "DTINTERNACAO": "2026-02-07T09:30:00",
+    "COR": "PARDA",
+    "SEXO": "M",
+    "PESO": 78.5,
+    "DTPESO": "2026-02-07T09:35:00",
+    "ALTURA": 1.75,
+    "DTALTA": "",
+    "MOTIVOALTA": "",
+    "MEDICO_RESPONSAVEL": "DRA ANA",
+    "CIDADE": "SAO PAULO",
+    "IDCID": "A419",
+    "FKSETOR": 10,
+    "LEITO": "A101",
+    "DT_ULTIMA_TRANSFERENCIA": "2026-02-07T09:30:00"
+  }
+]
