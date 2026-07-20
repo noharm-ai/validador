@@ -10,6 +10,7 @@ const batches = [
     name: "CSV",
     files: {
       prescricoes: "prescricoes.csv",
+      pessoa: "pessoa.csv",
       medicamentos: "medicamentos.csv",
       setores: "setores.csv",
       unidades: "unidades.csv",
@@ -20,6 +21,7 @@ const batches = [
     name: "JSON",
     files: {
       prescricoes: "prescricoes.json",
+      pessoa: "pessoa.json",
       medicamentos: "medicamentos.json",
       setores: "setores.json",
       unidades: "unidades.json",

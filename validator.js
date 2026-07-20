@@ -9,6 +9,7 @@
 
   const FILE_TYPES = [
     { key: "prescricoes", label: "Prescricoes" },
+    { key: "pessoa", label: "Pessoa/Atendimento" },
     { key: "medicamentos", label: "Medicamentos" },
     { key: "setores", label: "Setores" },
     { key: "unidades", label: "Unidades" },
@@ -60,6 +61,7 @@
           "DTPRESCRICAO",
           "DTSUSPENSAO",
           "DTVIGENCIA",
+          "ESPECIALIDADE",
           "FKFREQUENCIA",
           "FKHOSPITAL",
           "FKMEDICAMENTO",
@@ -107,12 +109,70 @@
           ],
           date: ["DTATUALIZACAO", "DTCRIACAO_ORIGEM", "DTPRESCRICAO", "DTSUSPENSAO", "DTVIGENCIA"],
           boolean: [],
+          maxDigits: { NRATENDIMENTO: 9 },
+          maxLength: {
+            ALERGIA: 1,
+            CONVENIO: 100,
+            ESPECIALIDADE: 100,
+            FKFREQUENCIA: 50,
+            FKUNIDADEMEDIDA: 50,
+            HORARIO: 600,
+            LEITO: 16,
+            ORIGEM: 13,
+            PRESCRITOR: 255,
+            SLACM: 1,
+            SLTIPODOSAGEM: 16,
+            VIA: 50,
+          },
         },
         refs: {
           FKSETOR: "setores",
           FKMEDICAMENTO: "medicamentos",
           FKUNIDADEMEDIDA: "unidades",
           FKFREQUENCIA: "frequencia",
+        },
+      },
+      pessoa: {
+        required: ["FKHOSPITAL", "FKPESSOA", "NRATENDIMENTO", "DTINTERNACAO"],
+        allowed: [
+          "ALTURA",
+          "CIDADE",
+          "COR",
+          "DTALTA",
+          "DTINTERNACAO",
+          "DTNASCIMENTO",
+          "DTPESO",
+          "DT_ULTIMA_TRANSFERENCIA",
+          "FKHOSPITAL",
+          "FKPESSOA",
+          "FKSETOR",
+          "IDCID",
+          "LEITO",
+          "MEDICO_RESPONSAVEL",
+          "MOTIVOALTA",
+          "NOME",
+          "NRATENDIMENTO",
+          "PESO",
+          "SEXO",
+        ],
+        key: ["NRATENDIMENTO"],
+        typeHints: {
+          number: ["ALTURA", "FKHOSPITAL", "FKPESSOA", "FKSETOR", "NRATENDIMENTO", "PESO"],
+          date: ["DTALTA", "DTINTERNACAO", "DTNASCIMENTO", "DTPESO", "DT_ULTIMA_TRANSFERENCIA"],
+          boolean: [],
+          maxDigits: { NRATENDIMENTO: 9 },
+          maxLength: {
+            CIDADE: 250,
+            COR: 100,
+            IDCID: 50,
+            LEITO: 16,
+            MEDICO_RESPONSAVEL: 255,
+            MOTIVOALTA: 100,
+            SEXO: 1,
+          },
+        },
+        refs: {
+          FKSETOR: "setores",
         },
       },
       medicamentos: {
@@ -133,6 +193,10 @@
           number: ["CUSTO", "CUSTO_PADRAO", "FKHOSPITAL", "FKMEDICAMENTO", "VL_FATOR"],
           date: [],
           boolean: [],
+          maxLength: {
+            FKUNIDADEMEDIDACUSTO: 32,
+            NOME: 250,
+          },
         },
       },
       setores: {
@@ -143,6 +207,9 @@
           number: ["FKHOSPITAL", "FKSETOR"],
           date: [],
           boolean: [],
+          maxLength: {
+            NOME: 250,
+          },
         },
       },
       unidades: {
@@ -153,6 +220,11 @@
           number: ["FKHOSPITAL"],
           date: [],
           boolean: [],
+          notNumber: ["FKUNIDADEMEDIDA"],
+          maxLength: {
+            FKUNIDADEMEDIDA: 32,
+            NOME: 250,
+          },
         },
       },
       frequencia: {
@@ -163,6 +235,11 @@
           number: ["FKHOSPITAL"],
           date: [],
           boolean: [],
+          notNumber: ["FKFREQUENCIA"],
+          maxLength: {
+            FKFREQUENCIA: 50,
+            NOME: 250,
+          },
         },
       },
     },
@@ -393,6 +470,36 @@
             const fieldKey = normalizeField(field);
             if (!isBooleanValue(record[fieldKey])) {
               invalidTypes.push(`Registro ${idx + 1}: ${field} deve ser booleano.`);
+            }
+          });
+
+          (typeHints.notNumber || []).forEach((field) => {
+            const fieldKey = normalizeField(field);
+            const value = record[fieldKey];
+            if (!isEmptyValue(value) && isNumberValue(value)) {
+              invalidTypes.push(
+                `Registro ${idx + 1}: ${field} nao pode ser somente numero, deve ser a sigla/codigo (ex.: AMP C/10ML, 8/8).`
+              );
+            }
+          });
+
+          Object.entries(typeHints.maxDigits || {}).forEach(([field, max]) => {
+            const fieldKey = normalizeField(field);
+            const value = record[fieldKey];
+            if (isEmptyValue(value)) return;
+            const digits = String(value).trim().replace(/\D/g, "");
+            if (digits.length > max) {
+              invalidTypes.push(`Registro ${idx + 1}: ${field} deve ter no maximo ${max} digitos.`);
+            }
+          });
+
+          Object.entries(typeHints.maxLength || {}).forEach(([field, max]) => {
+            const fieldKey = normalizeField(field);
+            const value = record[fieldKey];
+            if (isEmptyValue(value)) return;
+            const length = String(value).length;
+            if (length > max) {
+              invalidTypes.push(`Registro ${idx + 1}: ${field} deve ter no maximo ${max} caracteres.`);
             }
           });
         });
