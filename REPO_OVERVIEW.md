@@ -11,7 +11,7 @@ CSV/JSON de integração hospitalar contra o **padrão de dados NoHarm** — o
 schema de entrada usado pela plataforma NoHarm para ingestão de dados clínicos
 (prescrições, medicamentos, atendimentos, etc.).
 
-O usuário sobe até 6 arquivos (um por "tipo de dado"), a aplicação roda no
+O usuário sobe até 9 arquivos (um por "tipo de dado"), a aplicação roda no
 browser um motor de validação e mostra um relatório com erros/alertas por
 arquivo, exportável em JSON.
 
@@ -27,7 +27,7 @@ carregado via CDN (React, AntD, Babel) + um HTML estático. É hospedado via
 ├── app.js                  # UI React (JSX via Babel in-browser, sem transpilação prévia)
 ├── validator.js             # Motor de validação (UMD: usado tanto pelo browser quanto por Node/tests)
 ├── styles.css               # Tema/layout
-├── examples/                 # Lotes de exemplo válidos (CSV e JSON) para os 6 tipos de arquivo
+├── examples/                 # Lotes de exemplo válidos (CSV e JSON) para os 9 tipos de arquivo
 ├── tests/validate_examples.js # Teste Node que roda o motor contra examples/ e espera status "ok"
 ├── imgs/                     # favicon e logo
 ├── .github/workflows/ci.yml  # CI: npm install + npm test em todo push/PR
@@ -47,16 +47,19 @@ Módulo UMD (`(function(root, factory) {...})`) que funciona tanto como
 `window.NoHarmValidator` (browser) quanto como `module.exports` (Node, usado
 nos testes e em `require("../validator")`).
 
-### 3.1. Os 6 tipos de arquivo (`FILE_TYPES`)
+### 3.1. Os 9 tipos de arquivo (`FILE_TYPES`)
 
-| key            | label              | chave primária (`key`) |
-|----------------|--------------------|--------------------------|
-| `prescricoes`  | Prescricoes         | `FKPRESMED`              |
-| `pessoa`       | Pessoa/Atendimento  | `NRATENDIMENTO`          |
-| `medicamentos` | Medicamentos        | `FKMEDICAMENTO`          |
-| `setores`      | Setores             | `FKSETOR`                |
-| `unidades`     | Unidades            | `FKUNIDADEMEDIDA`        |
-| `frequencia`   | Frequencia          | `FKFREQUENCIA`           |
+| key            | label              | chave primária (`key`)                |
+|----------------|--------------------|-----------------------------------------|
+| `prescricoes`  | Prescricoes         | `FKPRESMED`                             |
+| `pessoa`       | Pessoa/Atendimento  | `NRATENDIMENTO`                         |
+| `medicamentos` | Medicamentos        | `FKMEDICAMENTO`                         |
+| `setores`      | Setores             | `FKSETOR`                               |
+| `unidades`     | Unidades            | `FKUNIDADEMEDIDA`                       |
+| `frequencia`   | Frequencia          | `FKFREQUENCIA`                          |
+| `exame`        | Exames              | `FKEXAME`                               |
+| `alergia`      | Alergias            | `FKPESSOA` + `FKMEDICAMENTO`             |
+| `cultura`      | Culturas            | `FKEXAME` + `FKITEMEXAME` + `FKMEDICAMENTO` |
 
 ### 3.2. Schema (`NOHARM_SCHEMA`)
 
@@ -89,6 +92,13 @@ prescricoes.FKMEDICAMENTO   → medicamentos.FKMEDICAMENTO
 prescricoes.FKUNIDADEMEDIDA → unidades.FKUNIDADEMEDIDA
 prescricoes.FKFREQUENCIA    → frequencia.FKFREQUENCIA
 pessoa.FKSETOR              → setores.FKSETOR
+exame.NRATENDIMENTO         → pessoa.NRATENDIMENTO
+alergia.FKMEDICAMENTO       → medicamentos.FKMEDICAMENTO
+alergia.NRATENDIMENTO       → pessoa.NRATENDIMENTO
+cultura.FKEXAME             → exame.FKEXAME
+cultura.FKMEDICAMENTO       → medicamentos.FKMEDICAMENTO
+cultura.FKSETOR             → setores.FKSETOR
+cultura.NRATENDIMENTO       → pessoa.NRATENDIMENTO
 ```
 
 ### 3.3. Pipeline de validação
@@ -181,7 +191,7 @@ pessoa.FKSETOR              → setores.FKSETOR
 - **Implicação para quem for alterar o schema**: qualquer mudança em
   `required`/`allowed`/`typeHints`/`refs` em `validator.js` deve vir
   acompanhada de atualização dos arquivos em `examples/` (CSV e JSON, para os
-  6 tipos), senão os testes quebram. Isso já está documentado em
+  9 tipos), senão os testes quebram. Isso já está documentado em
   `AGENTS.md`.
 
 ## 6. CI/CD
