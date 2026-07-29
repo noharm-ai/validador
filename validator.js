@@ -14,6 +14,7 @@
     { key: "setores", label: "Setores" },
     { key: "unidades", label: "Unidades" },
     { key: "frequencia", label: "Frequencia" },
+    { key: "exame", label: "Exames" },
   ];
 
   const NOHARM_SCHEMA = {
@@ -240,6 +241,25 @@
             FKFREQUENCIA: 50,
             NOME: 250,
           },
+        },
+      },
+      exame: {
+        required: ["FKEXAME", "FKHOSPITAL", "FKPESSOA", "NRATENDIMENTO", "DTEXAME", "TPEXAME", "RESULTADO"],
+        allowed: ["FKEXAME", "FKHOSPITAL", "FKPESSOA", "NRATENDIMENTO", "DTEXAME", "TPEXAME", "RESULTADO", "UNIDADE"],
+        key: ["FKEXAME"],
+        typeHints: {
+          number: ["FKEXAME", "FKHOSPITAL", "FKPESSOA", "NRATENDIMENTO"],
+          date: ["DTEXAME"],
+          boolean: [],
+          maxDigits: { NRATENDIMENTO: 9 },
+          maxLength: {
+            TPEXAME: 100,
+            RESULTADO: 250,
+            UNIDADE: 50,
+          },
+        },
+        refs: {
+          NRATENDIMENTO: "pessoa",
         },
       },
     },

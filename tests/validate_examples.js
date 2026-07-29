@@ -15,6 +15,7 @@ const batches = [
       setores: "setores.csv",
       unidades: "unidades.csv",
       frequencia: "frequencia.csv",
+      exame: "exame.csv",
     },
   },
   {
@@ -26,6 +27,7 @@ const batches = [
       setores: "setores.json",
       unidades: "unidades.json",
       frequencia: "frequencia.json",
+      exame: "exame.json",
     },
   },
 ];
