@@ -15,6 +15,7 @@
     { key: "unidades", label: "Unidades" },
     { key: "frequencia", label: "Frequencia" },
     { key: "exame", label: "Exames" },
+    { key: "alergia", label: "Alergias" },
   ];
 
   const NOHARM_SCHEMA = {
@@ -259,6 +260,38 @@
           },
         },
         refs: {
+          NRATENDIMENTO: "pessoa",
+        },
+      },
+      alergia: {
+        required: ["FKHOSPITAL", "FKPESSOA", "NRATENDIMENTO", "FKMEDICAMENTO", "NOME_MEDICAMENTO", "ATIVO"],
+        allowed: [
+          "FKHOSPITAL",
+          "FKPESSOA",
+          "NRATENDIMENTO",
+          "DTINTERNACAO",
+          "FKMEDICAMENTO",
+          "NOME_MEDICAMENTO",
+          "CREATED_AT",
+          "CREATED_BY",
+          "UPDATED_AT",
+          "UPDATED_BY",
+          "ATIVO",
+        ],
+        key: ["FKPESSOA", "FKMEDICAMENTO"],
+        typeHints: {
+          number: ["FKHOSPITAL", "FKPESSOA", "NRATENDIMENTO", "FKMEDICAMENTO"],
+          date: ["DTINTERNACAO", "CREATED_AT", "UPDATED_AT"],
+          boolean: ["ATIVO"],
+          maxDigits: { NRATENDIMENTO: 9 },
+          maxLength: {
+            NOME_MEDICAMENTO: 250,
+            CREATED_BY: 255,
+            UPDATED_BY: 255,
+          },
+        },
+        refs: {
+          FKMEDICAMENTO: "medicamentos",
           NRATENDIMENTO: "pessoa",
         },
       },

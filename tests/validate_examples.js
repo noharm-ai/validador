@@ -16,6 +16,7 @@ const batches = [
       unidades: "unidades.csv",
       frequencia: "frequencia.csv",
       exame: "exame.csv",
+      alergia: "alergia.csv",
     },
   },
   {
@@ -28,6 +29,7 @@ const batches = [
       unidades: "unidades.json",
       frequencia: "frequencia.json",
       exame: "exame.json",
+      alergia: "alergia.json",
     },
   },
 ];

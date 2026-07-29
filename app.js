@@ -45,6 +45,7 @@ const FILE_TYPES = Validator
       { key: "unidades", label: "Unidades" },
       { key: "frequencia", label: "Frequencia" },
       { key: "exame", label: "Exames" },
+      { key: "alergia", label: "Alergias" },
     ];
 const NOHARM_SCHEMA = Validator ? Validator.NOHARM_SCHEMA : null;
 
@@ -65,6 +66,7 @@ function App() {
     unidades: null,
     frequencia: null,
     exame: null,
+    alergia: null,
   });
   const [results, setResults] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -94,6 +96,7 @@ function App() {
     unidades: ["unidade", "unidades", "unidademedida", "uni"],
     frequencia: ["frequencia", "frequencias", "freq"],
     exame: ["exame", "exames"],
+    alergia: ["alergia", "alergias"],
   };
 
   const getFileBaseName = (name) => name.toLowerCase().replace(/\.(csv|json)$/i, "");
@@ -151,6 +154,7 @@ function App() {
       unidades: null,
       frequencia: null,
       exame: null,
+      alergia: null,
     });
     setResults(null);
     setMappingWarnings([]);
@@ -461,7 +465,7 @@ function App() {
 
           <div className="nh-footer-note">
             Validacao semantica inclui chaves duplicadas e referencias cruzadas entre prescricoes, pessoa/atendimento,
-            medicamentos, setores, unidades, frequencia e exames.
+            medicamentos, setores, unidades, frequencia, exames e alergias.
           </div>
         </Content>
       </Layout>
