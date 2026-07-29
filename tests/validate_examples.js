@@ -17,6 +17,7 @@ const batches = [
       frequencia: "frequencia.csv",
       exame: "exame.csv",
       alergia: "alergia.csv",
+      cultura: "cultura.csv",
     },
   },
   {
@@ -30,6 +31,7 @@ const batches = [
       frequencia: "frequencia.json",
       exame: "exame.json",
       alergia: "alergia.json",
+      cultura: "cultura.json",
     },
   },
 ];
