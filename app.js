@@ -44,6 +44,9 @@ const FILE_TYPES = Validator
       { key: "setores", label: "Setores" },
       { key: "unidades", label: "Unidades" },
       { key: "frequencia", label: "Frequencia" },
+      { key: "exame", label: "Exames" },
+      { key: "alergia", label: "Alergias" },
+      { key: "cultura", label: "Culturas" },
     ];
 const NOHARM_SCHEMA = Validator ? Validator.NOHARM_SCHEMA : null;
 
@@ -63,6 +66,9 @@ function App() {
     setores: null,
     unidades: null,
     frequencia: null,
+    exame: null,
+    alergia: null,
+    cultura: null,
   });
   const [results, setResults] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -91,6 +97,9 @@ function App() {
     setores: ["setor", "setores"],
     unidades: ["unidade", "unidades", "unidademedida", "uni"],
     frequencia: ["frequencia", "frequencias", "freq"],
+    exame: ["exame", "exames"],
+    alergia: ["alergia", "alergias"],
+    cultura: ["cultura", "culturas"],
   };
 
   const getFileBaseName = (name) => name.toLowerCase().replace(/\.(csv|json)$/i, "");
@@ -147,6 +156,9 @@ function App() {
       setores: null,
       unidades: null,
       frequencia: null,
+      exame: null,
+      alergia: null,
+      cultura: null,
     });
     setResults(null);
     setMappingWarnings([]);
@@ -457,7 +469,7 @@ function App() {
 
           <div className="nh-footer-note">
             Validacao semantica inclui chaves duplicadas e referencias cruzadas entre prescricoes, pessoa/atendimento,
-            medicamentos, setores, unidades e frequencia.
+            medicamentos, setores, unidades, frequencia, exames, alergias e culturas.
           </div>
         </Content>
       </Layout>
