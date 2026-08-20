@@ -1,0 +1,12 @@
+[
+  {
+    "FKHOSPITAL": 1,
+    "FKEXAME": 8001,
+    "FKPESSOA": 5001,
+    "NRATENDIMENTO": 7001,
+    "DTEXAME": "2026-02-07T08:00:00",
+    "TPEXAME": "HEMOGLOBINA",
+    "RESULTADO": "12.5",
+    "UNIDADE": "g/dL"
+  }
+]

@@ -3,7 +3,7 @@
 Validador web standalone para arquivos CSV/JSON no padrao NoHarm.
 
 ## O que ele faz
-- Recebe 5 arquivos (prescricoes, medicamentos, setores, unidades, frequencia).
+- Recebe 9 arquivos (prescricoes, pessoa, medicamentos, setores, unidades, frequencia, exame, alergia, cultura).
 - Valida estrutura e semantica dos dados.
 - Aceita CSV ou JSON (lista plana de registros, sem hierarquia).
 - Faz validacao cruzada entre chaves (ex.: prescricoes -> medicamentos, setores, unidades, frequencia).
