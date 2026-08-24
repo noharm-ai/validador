@@ -28,6 +28,8 @@ const {
   WarningOutlined,
   FileTextOutlined,
   SettingOutlined,
+  DownloadOutlined,
+  BulbOutlined,
 } = icons;
 
 const { Header, Sider, Content } = Layout;
@@ -56,6 +58,37 @@ const formatBytes = (bytes) => {
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   const val = bytes / Math.pow(1024, i);
   return `${val.toFixed(1)} ${sizes[i]}`;
+};
+
+const downloadText = (fileName, text, mime) => {
+  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const downloadTemplate = (fileKey, format) => {
+  if (!Validator) return;
+  const text = format === "json" ? Validator.buildTemplateJson(fileKey) : Validator.buildTemplateCsv(fileKey);
+  if (!text) return;
+  downloadText(
+    Validator.getTemplateFileName(fileKey, format),
+    text,
+    format === "json" ? "application/json" : "text/csv"
+  );
+};
+
+const downloadAllTemplates = async (format) => {
+  for (const file of FILE_TYPES) {
+    downloadTemplate(file.key, format);
+    // O browser bloqueia downloads em rajada; um respiro entre eles resolve.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
 };
 
 function App() {
@@ -204,13 +237,10 @@ function App() {
 
   const downloadReport = () => {
     if (!results) return;
-    const blob = new Blob([JSON.stringify(results, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "noharm-validacao.json";
-    link.click();
-    URL.revokeObjectURL(url);
+    // O campo parsed carrega o dado bruto inteiro e estoura o arquivo sem
+    // ajudar em nada no diagnostico.
+    const { parsed, ...report } = results;
+    downloadText("noharm-validacao.json", JSON.stringify(report, null, 2), "application/json");
   };
 
   const summaryContent = results?.summary ? (
@@ -309,6 +339,41 @@ function App() {
             />
           )}
 
+          <Card className="nh-card" style={{ marginTop: 16 }} bodyStyle={{ padding: 16 }}>
+            <div className="nh-templates-head">
+              <div>
+                <div className="nh-upload-label">Modelos para download</div>
+                <div className="nh-upload-meta">
+                  Lote de exemplo coerente entre si (as chaves estrangeiras fecham). Use como base da extracao: datas em{" "}
+                  {Validator ? Validator.DATE_FORMAT_LABEL : "YYYY-MM-DD"}, decimal com ponto, arquivo em UTF-8.
+                </div>
+              </div>
+              <Space wrap>
+                <Button icon={<DownloadOutlined />} onClick={() => downloadAllTemplates("csv")}>
+                  Baixar todos (CSV)
+                </Button>
+                <Button icon={<DownloadOutlined />} onClick={() => downloadAllTemplates("json")}>
+                  Baixar todos (JSON)
+                </Button>
+              </Space>
+            </div>
+            <div className="nh-templates-grid">
+              {FILE_TYPES.map((file) => (
+                <div className="nh-template-item" key={`template-${file.key}`}>
+                  <Text strong>{file.label}</Text>
+                  <Space size={4}>
+                    <Button size="small" type="link" onClick={() => downloadTemplate(file.key, "csv")}>
+                      CSV
+                    </Button>
+                    <Button size="small" type="link" onClick={() => downloadTemplate(file.key, "json")}>
+                      JSON
+                    </Button>
+                  </Space>
+                </div>
+              ))}
+            </div>
+          </Card>
+
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col xs={24}>
               <Card className="nh-card" bodyStyle={{ padding: 16 }}>
@@ -383,6 +448,10 @@ function App() {
                     Registros: {fileResult?.recordCount ?? "-"}
                   </div>
                   <div className="nh-muted">Colunas: {fileResult?.columnCount ?? "-"}</div>
+                  {fileResult ? <div className="nh-muted">Erros: {fileResult.issueCount ?? 0}</div> : null}
+                  {fileResult?.malformedRowCount ? (
+                    <div className="nh-muted">Linhas com colunas fora do padrao: {fileResult.malformedRowCount}</div>
+                  ) : null}
                 </div>
               );
             })}
@@ -395,22 +464,80 @@ function App() {
             accordion
             items={FILE_TYPES.map((file) => {
               const fileResult = results?.files?.[file.key];
+              const groups = fileResult?.issueGroups || [];
               const issues = fileResult?.issues || [];
+              const hints = fileResult?.hints || [];
               const warnings = fileResult?.warnings || [];
+              const issueCount = fileResult?.issueCount ?? issues.length;
               return {
                 key: file.key,
-                label: `${file.label}`,
+                label: (
+                  <Space size={8}>
+                    <span>{file.label}</span>
+                    {issueCount > 0 && <Tag color="red">{issueCount} erro(s)</Tag>}
+                    {warnings.length > 0 && <Tag color="gold">{warnings.length} alerta(s)</Tag>}
+                  </Space>
+                ),
                 children: (
                   <div>
-                    {issues.length === 0 && warnings.length === 0 ? (
+                    {issueCount === 0 && warnings.length === 0 ? (
                       <Alert message="Nenhum erro encontrado." type="success" showIcon />
                     ) : (
                       <>
-                        {issues.length > 0 && (
+                        {hints.length > 0 && (
+                          <Alert
+                            style={{ marginBottom: 12 }}
+                            type="info"
+                            showIcon
+                            icon={<BulbOutlined />}
+                            message="Dicas: provavelmente e o arquivo, nao o dado"
+                            description={
+                              <div className="nh-hints">
+                                {hints.map((hint) => (
+                                  <div className="nh-hint" key={`${file.key}-${hint.key}`}>
+                                    <Text strong>{hint.title}</Text>
+                                    <div className="nh-muted">{hint.detail}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            }
+                          />
+                        )}
+                        {groups.length > 0 ? (
                           <>
-                            <Text strong>Erros</Text>
-                            <List size="small" dataSource={issues} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                            <Text strong>Erros ({issueCount} ocorrencia(s) em {groups.length} tipo(s))</Text>
+                            <List
+                              size="small"
+                              dataSource={groups}
+                              renderItem={(group) => (
+                                <List.Item>
+                                  <div>
+                                    <Space size={8} align="start">
+                                      <Tag color={group.count > 1 ? "red" : "orange"}>{group.count}x</Tag>
+                                      <Text>{group.message}</Text>
+                                    </Space>
+                                    {group.samples && group.samples.length > 0 && (
+                                      <div className="nh-issue-samples">
+                                        {group.samples.map((sample, idx) => (
+                                          <div key={`${group.message}-${idx}`}>{sample}</div>
+                                        ))}
+                                        {group.count > group.samples.length && (
+                                          <div>... e outras {group.count - group.samples.length} ocorrencia(s)</div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </List.Item>
+                              )}
+                            />
                           </>
+                        ) : (
+                          issues.length > 0 && (
+                            <>
+                              <Text strong>Erros</Text>
+                              <List size="small" dataSource={issues} renderItem={(item) => <List.Item>{item}</List.Item>} />
+                            </>
+                          )
                         )}
                         {warnings.length > 0 && (
                           <>
