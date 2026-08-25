@@ -191,6 +191,51 @@ body {
   color: #991b1b;
 }
 
+.nh-templates-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.nh-templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+.nh-template-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+.nh-hints {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nh-hint {
+  font-size: 13px;
+}
+
+.nh-issue-samples {
+  margin-top: 4px;
+  margin-left: 8px;
+  color: var(--nh-muted);
+  font-size: 12px;
+  font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+  word-break: break-word;
+}
+
 .nh-footer-note {
   margin-top: 16px;
   color: var(--nh-muted);

@@ -3,7 +3,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node tests/validate_examples.js"
+    "test": "node tests/validate_examples.js && node tests/validate_templates.js"
   },
   "dependencies": {
     "papaparse": "^5.4.1"
