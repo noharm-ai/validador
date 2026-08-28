@@ -29,6 +29,7 @@ carregado via CDN (React, AntD, Babel) + um HTML estático. É hospedado via
 ├── styles.css               # Tema/layout
 ├── examples/                 # Lotes de exemplo válidos (CSV e JSON) para os 9 tipos de arquivo
 ├── tests/validate_examples.js # Teste Node que roda o motor contra examples/ e espera status "ok"
+├── tests/validate_templates.js # Valida os modelos de download + regressão das dicas
 ├── imgs/                     # favicon e logo
 ├── .github/workflows/ci.yml  # CI: npm install + npm test em todo push/PR
 ├── .nojekyll                  # Necessário para GitHub Pages não atropelar o index.html
@@ -75,7 +76,12 @@ isso com o Tag "Único" em `app.js`). Para cada tipo de arquivo define:
   para detectar duplicatas e para indexar registros em validações cruzadas.
 - **`typeHints`**: regras de tipo/formato por campo:
   - `number`: deve ser numérico (aceita `,` como separador decimal).
-  - `date`: deve ser parseável por `new Date(...)`.
+  - `date`: deve estar em ISO — `YYYY-MM-DD`, `YYYY-MM-DDTHH:MM:SS` ou
+    `YYYY-MM-DD HH:MM:SS`, com validação de calendário (dia 31/02 reprova).
+    **Não** use `new Date()` aqui: ele interpreta `06/08/26` como mm/dd e
+    aceita silenciosamente a data com dia e mês trocados, reprovando apenas
+    quando o dia passa de 12 — o que faz o relatório parecer um problema
+    parcial quando o arquivo inteiro está no formato errado.
   - `boolean`: aceita `true/false/0/1/s/n/sim/nao`.
   - `notNumber`: o inverso de `number` — campo que **não pode** ser somente
     numérico (ex.: `FKUNIDADEMEDIDA`, `FKFREQUENCIA`, que devem ser
@@ -113,8 +119,18 @@ cultura.NRATENDIMENTO       → pessoa.NRATENDIMENTO
      entre `,`, `;`, tab, `|`).
    - Todos os nomes de campo são normalizados (`normalizeField`: trim +
      lowercase) para tornar a comparação de schema case-insensitive.
+   - Detecta **codificação errada**: o arquivo é lido como UTF-8, então byte
+     inválido vira `U+FFFD` — a presença desse caractere denuncia Latin-1 /
+     Windows-1252.
+   - Detecta **linha inteira entre aspas** (o CSV vira uma coluna só) e
+     **delimitador não identificado**.
+   - Linhas com quantidade de colunas diferente do cabeçalho entram em
+     `malformedRows` e são **excluídas** das validações de conteúdo: os valores
+     estão deslocados e só produziriam erro derivado (`NRATENDIMENTO deve ser
+     numero` etc.). Elas viram um aviso com a contagem.
    - Retorna `{ fileName, format, root, fields, normalizedFields, records,
-     rawRecords, parseErrors }`.
+     rawRecords, parseIssues, parseErrors, parseHints, malformedRows,
+     replacementChars }`.
 
 2. **`validateParsed(parsedFiles)`** → delega para `buildValidationForSchema`:
    - **Índices cruzados**: para cada arquivo, monta um `Set` das chaves
@@ -132,16 +148,46 @@ cultura.NRATENDIMENTO       → pessoa.NRATENDIMENTO
      8. Referências cruzadas quebradas (`refs`): valor de FK que não existe
         no índice do arquivo referenciado.
    - Cada arquivo recebe `status`: `"ok"` | `"warn"` | `"error"`, mais
-     `issues[]`, `warnings[]`, `recordCount`, `columnCount`.
+     `issues[]`, `issueGroups[]`, `issueCount`, `hints[]`, `warnings[]`,
+     `recordCount`, `columnCount`, `malformedRowCount`.
    - Status geral (`overall`) é o pior status entre todos os arquivos.
 
-3. Saída final: `{ summary: { status, message }, files: {...por tipo...},
-   parsed: {...dados brutos parseados...} }`.
+3. Saída final: `{ summary: { status, message, errorCount, warningCount },
+   files: {...por tipo...}, parsed: {...dados brutos parseados...} }`.
+   O app **remove `parsed`** ao exportar o relatório (era ele que fazia o JSON
+   exportado passar de 70 MB).
+
+### 3.3.1. Agrupamento de erros e dicas
+
+Ocorrências iguais são agrupadas por `createIssueCollector`:
+
+- `issueGroups`: `[{ message, count, samples[] }]` ordenado por `count`, com no
+  máximo `MAX_SAMPLES` (5) exemplos por grupo.
+- `issueCount`: contagem **real**, sem truncar. Antes o relatório cortava em 200
+  linhas e a contagem exibida era a da lista truncada, o que subnotificava
+  gravemente (um arquivo com 46 mil erros aparecia com 201).
+- `issues`: mantido para compatibilidade — uma linha por grupo, no formato
+  `"1487x <mensagem> | ex.: <amostra>"`.
+- `hints`: dicas deduplicadas vindas do catálogo `HINTS`, com a causa provável
+  no arquivo. Cada `collector.add(grupo, amostra, chaveDaDica)` associa a dica.
+  Chaves atuais: `csvFieldCount`, `csvDecimalComma`, `csvSingleColumn`,
+  `csvDelimiter`, `encoding`, `dateFormat`, `boolean`, `notNumber`,
+  `missingFields`, `unexpectedFields`, `refMissing`, `keyEmpty`,
+  `duplicateKey`, `maxLength`, `numberFormat`, `jsonRoot`, `parse`.
+
+### 3.3.2. Modelos de arquivo (`TEMPLATES`)
+
+`TEMPLATES` guarda um lote de exemplo por tipo (2 registros cada) que **fecha
+entre si** — as chaves estrangeiras dos 9 arquivos são válidas. É a fonte dos
+downloads da UI, via `buildTemplateCsv` / `buildTemplateJson` /
+`getTemplateFileName`. `tests/validate_templates.js` valida esse lote com o
+próprio motor, então um modelo que o validador reprovaria quebra o teste.
 
 ### 3.4. Constantes/comportamentos importantes para quem for mexer
 
-- `MAX_ERRORS = 200`: teto de erros de tipo reportados por arquivo (evita
-  travar a UI com milhares de linhas de erro).
+- `MAX_ERRORS = 200`: teto de **grupos** de erro listados em `issues` por
+  arquivo. `issueCount` continua trazendo o total real.
+- `MAX_SAMPLES = 5`: exemplos guardados por grupo de erro.
 - `NORMALIZATION_MODE = "lower"`: declarada mas não usada como flag
   condicional em nenhum lugar do código atual — a normalização é sempre
   lowercase, hardcoded em `normalizeField`.
@@ -167,12 +213,15 @@ cultura.NRATENDIMENTO       → pessoa.NRATENDIMENTO
   2. Botão **"Validar arquivos"** (`validateAll`): lê o texto de cada File
      (`target.text()`), chama `Validator.parseFileText` e depois
      `Validator.validateParsed`, guarda em `results`.
-  3. Renderiza: alerta de resumo geral, cards de resumo por arquivo (status +
-     contagem de registros/colunas), painel `Collapse` com detalhes de
-     erros/avisos por arquivo, e uma seção final listando os campos
-     esperados do schema (`schemaPreview`, derivado de `NOHARM_SCHEMA.allowed`
-     de cada tipo).
-  4. **"Exportar relatório"**: baixa `results` como `noharm-validacao.json`.
+  3. Renderiza: alerta de resumo geral, seção **"Modelos para download"**
+     (gerada de `TEMPLATES`, com botão por tipo em CSV/JSON e "baixar todos"),
+     cards de resumo por arquivo (status + registros/colunas/erros/linhas
+     malformadas), painel `Collapse` com as **dicas** do arquivo em destaque e
+     os erros agrupados (`issueGroups`: contagem + amostras), e uma seção final
+     listando os campos esperados do schema (`schemaPreview`, derivado de
+     `NOHARM_SCHEMA.allowed` de cada tipo).
+  4. **"Exportar relatório"**: baixa `results` **sem o campo `parsed`** como
+     `noharm-validacao.json`.
 - A UI tem elementos decorativos sem função real ainda (menu lateral com
   itens "Dados"/"Arquivos"/"Config" sem rota associada, campo de busca que só
   mostra um hint "Nada por aqui, por enquanto ;)"). Não confundir com
@@ -180,10 +229,16 @@ cultura.NRATENDIMENTO       → pessoa.NRATENDIMENTO
 
 ## 5. Testes (`tests/validate_examples.js`)
 
-- Teste Node simples (sem framework de teste, usa `assert` nativo).
-- Roda **exatamente o mesmo motor** (`require("../validator")`) contra dois
-  lotes de exemplo em `examples/`: um em CSV, um em JSON — mesmos dados,
-  formatos diferentes.
+- Testes Node simples (sem framework de teste, usam `assert` nativo).
+  `npm test` roda `validate_examples.js` e depois `validate_templates.js`.
+- `validate_examples.js` roda **exatamente o mesmo motor**
+  (`require("../validator")`) contra dois lotes de exemplo em `examples/`: um em
+  CSV, um em JSON — mesmos dados, formatos diferentes.
+- `validate_templates.js` valida os modelos gerados (CSV e JSON) e faz a
+  regressão das regras que motivaram o ajuste: data `dd/mm/aa` com dia ≤ 12 tem
+  que reprovar, linha com coluna a mais tem que virar `malformedRows` +
+  dica `csvFieldCount`, arquivo fora de UTF-8 tem que acusar `encoding`, e CSV
+  com a linha inteira entre aspas tem que acusar `csvSingleColumn`.
 - Espera `status === "ok"` para o resultado geral e para cada arquivo
   individualmente. Falha com `assert` se qualquer arquivo tiver erro.
 - Executado via `npm test`, e também em CI (`.github/workflows/ci.yml`) em
@@ -191,8 +246,8 @@ cultura.NRATENDIMENTO       → pessoa.NRATENDIMENTO
 - **Implicação para quem for alterar o schema**: qualquer mudança em
   `required`/`allowed`/`typeHints`/`refs` em `validator.js` deve vir
   acompanhada de atualização dos arquivos em `examples/` (CSV e JSON, para os
-  9 tipos), senão os testes quebram. Isso já está documentado em
-  `AGENTS.md`.
+  9 tipos) **e de `TEMPLATES`**, senão os testes quebram. Isso já está
+  documentado em `AGENTS.md`.
 
 ## 6. CI/CD
 
