@@ -612,7 +612,9 @@ function App() {
           status: saved ? saved.status : "pendente",
           arquivo: saved ? saved.fileName : null,
           registros: saved ? saved.recordCount : null,
-          colunasExtrasIgnoradas: saved ? saved.extraFields : null,
+          // A contagem, nao os nomes: num arquivo sem cabecalho os "nomes de
+          // coluna" sao a primeira linha de dados do paciente.
+          colunasExtrasIgnoradas: saved ? saved.extraFieldCount : null,
           erros: saved ? saved.issueCount : null,
           // `saved` vem do progresso, que nao guarda valor vindo do arquivo:
           // o relatorio leva a mensagem e a contagem, nao o dado do paciente.

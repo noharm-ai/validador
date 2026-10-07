@@ -158,6 +158,7 @@ codificacao, linha inteira entre aspas).
 ## Seguranca
 O validador le dado de paciente, entao:
 
+
 - As libs de terceiro vem do CDN com **versao pinada e `integrity` (SRI)**: se
   o byte mudar, o browser se recusa a executar.
 - Um **CSP** fecha a saida (`connect-src 'self'`, `img-src 'self' data:`):

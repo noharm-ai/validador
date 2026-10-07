@@ -139,7 +139,9 @@
     // Entao fica de fora daqui tudo que carrega valor vindo do arquivo:
     // - `preview` (as 5 primeiras linhas do arquivo, com nome e nascimento);
     // - `samples` e `distinctValues` dos grupos de erro, que citam o valor do
-    //   campo ('registro 1, valor "12/03/1958"').
+    //   campo ('registro 1, valor "12/03/1958"');
+    // - os NOMES das colunas extras (`extraFields`), que num arquivo sem
+    //   cabecalho sao os dados do primeiro paciente.
     //
     // O que fica: status, contagens e a MENSAGEM do erro — suficiente para o
     // relatorio e para o cliente saber o que corrigir. Os valores continuam na
@@ -171,7 +173,13 @@
         issueGroups: semValores(result.issueGroups),
         hints: result.hints || [],
         warnings: result.warnings || [],
-        extraFields: result.extraFields || [],
+        // So a CONTAGEM. Os nomes vem do cabecalho do arquivo do cliente — e
+        // export sem cabecalho (SQL*Plus sem SET HEADING ON, banner antes do
+        // header, arquivo cortado na mao: exatamente os casos que o validador
+        // existe para pegar) faz a primeira LINHA DE DADOS virar cabecalho.
+        // Ai os "nomes de coluna" sao nome, nascimento, cidade, CID e leito do
+        // primeiro paciente. A tela mostra a contagem, nunca os nomes.
+        extraFieldCount: (result.extraFields || []).length,
         indexStored: storeIndex,
         indexTruncated: Array.isArray(index) && index.length > MAX_INDEX_KEYS,
         validatedAt: new Date().toISOString(),

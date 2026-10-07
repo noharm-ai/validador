@@ -502,8 +502,22 @@ Tres sairam por decisao do David, por prometerem acao que nao existe aqui:
   `saveStep` ja guardou o `preview` (as 5 primeiras linhas do arquivo) e os
   `samples` dos grupos de erro (que citam o valor: `registro 1, valor
   "12/03/1958"`). Uma revisao de seguranca pegou: 1177 bytes no `localStorage`
-  com nome, nascimento, cidade, CID, atendimento e leito. Agora `semValores()`
-  corta `preview`, `samples` e `distinctValues` na gravacao, e
+  com nome, nascimento, cidade, CID, atendimento e leito.
+  Uma segunda revisao pegou a **mesma coisa por outro caminho**, e esse e menos
+  obvio: **os NOMES das colunas extras** (`extraFields`). O PapaParse roda com
+  `header: true`, entao arquivo sem cabecalho — SQL*Plus sem `SET HEADING ON`,
+  banner antes do header, arquivo cortado na mao: exatamente os quebrados que o
+  validador existe para pegar — faz a primeira LINHA DE DADOS virar cabecalho,
+  e os "nomes de coluna" viram os dados do primeiro paciente. Hoje so a
+  **contagem** (`extraFieldCount`) e guardada e exportada; os nomes nunca
+  apareceram na tela. Pela mesma razao, `descreverErroDeLeitura()` troca a
+  mensagem do V8 para JSON invalido, que cita os primeiros caracteres da
+  entrada.
+  **Licao**: toda string que vem do arquivo e dado de paciente em potencial,
+  inclusive a que parece metadado. Ao adicionar campo ao registro do passo,
+  pergunte de onde a string veio.
+  Agora `semValores()` corta `preview`, `samples` e `distinctValues` na
+  gravacao, e
   `tests/validate_storage.js` **tranca isso** com um teste que reprova se
   qualquer valor de arquivo aparecer no storage.
   O que fica gravado: status, contagens e a **mensagem** do erro. Os valores
@@ -560,6 +574,10 @@ Tres sairam por decisao do David, por prometerem acao que nao existe aqui:
 ## Modelos
 - Os modelos de download saem de `TEMPLATES` no `validator.js`. O lote precisa
   fechar entre si (chaves estrangeiras validas entre as 15 views).
+- **Nada de nome realista nos dados de exemplo.** Sao "PACIENTE EXEMPLO UM",
+  "DRA EXEMPLO UM", "FARMACEUTICA EXEMPLO". Ja houve "JOAO BATISTA DOS SANTOS"
+  e "DRA FERNANDA ALVES" ali, e isso fez um relatorio de bug parecer vazamento
+  de dado real de paciente.
 - **O lote e um caso clinico so, de proposito.** Paciente 5001 / atendimento
   7001: pneumonia em UTI, com a prescricao (12 itens nas quatro origens:
   Medicamentos, Solucoes agrupadas, Proced/Exames e Dietas), o painel de 12

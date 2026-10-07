@@ -288,7 +288,7 @@ function PreviewTable({ preview, recordCount }) {
 
 function StepResult({ result, onFixRef }) {
   if (!result) return null;
-  const { status, issueGroups = [], hints = [], warnings = [], extraFields = [] } = result;
+  const { status, issueGroups = [], hints = [], warnings = [] } = result;
 
   if (status === "ok" || status === "warn") {
     return (

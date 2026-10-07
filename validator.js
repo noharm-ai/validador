@@ -731,6 +731,14 @@
     return { entries, hintKeys: Array.from(hintKeys) };
   };
 
+  // Descreve a falha sem repetir o que veio no arquivo.
+  const descreverErroDeLeitura = (err) => {
+    const bruto = String((err && err.message) || "");
+    if (/JSON/i.test(bruto)) return "o arquivo nao e um JSON valido";
+    if (/position|token/i.test(bruto)) return "o arquivo nao pode ser interpretado";
+    return "formato nao reconhecido";
+  };
+
   const parseFileText = async (fileName, text) => {
     const format = guessFormat(fileName);
     const parseIssues = [];
@@ -797,7 +805,15 @@
         );
       }
     } catch (err) {
-      parseIssues.push({ group: `Erro ao ler arquivo: ${err.message}`, sample: null, hint: "parse" });
+      // A mensagem do V8 para JSON invalido cita os primeiros caracteres da
+      // entrada ('Unexpected token \'N\', "NOME;DTNAS"... is not valid JSON'),
+      // e esses caracteres sao conteudo do arquivo do cliente. A mensagem fica
+      // guardada e vai no relatorio, entao nao pode carregar dado de paciente.
+      parseIssues.push({
+        group: `Erro ao ler arquivo: ${descreverErroDeLeitura(err)}`,
+        sample: null,
+        hint: "parse",
+      });
       parseHints.add("parse");
     }
 
@@ -1349,7 +1365,7 @@
     topo: [
       "1", "20", "1001", "5001", "7001",
       "2026-02-07T07:00:00", "2026-02-07T06:52:00", "2026-02-08T06:59:00", "2026-02-07T07:04:00",
-      "20-A", "4417", "DRA FERNANDA ALVES",
+      "20-A", "4417", "DRA EXEMPLO UM",
     ],
     convenio: "SUS",
     especialidade: "PNEUMOLOGIA",
@@ -1359,7 +1375,7 @@
     topo: [
       "1", "10", "1002", "5002", "7002",
       "2026-02-07T08:00:00", "2026-02-07T07:48:00", "2026-02-08T07:59:00", "2026-02-07T08:03:00",
-      "102-B", "4418", "DR BRUNO MENDES",
+      "102-B", "4418", "DR EXEMPLO DOIS",
     ],
     convenio: "PARTICULAR",
     especialidade: "CIRURGIA GERAL",
@@ -1455,11 +1471,11 @@
         "DT_ULTIMA_TRANSFERENCIA",
       ],
       rows: [
-        ["1", "5001", "JOAO BATISTA DOS SANTOS", "7001", "1958-03-12", "2026-02-05T22:40:00", "PARDA", "M", "81.4",
-          "2026-02-06T07:10:00", "1.74", "", "", "DRA FERNANDA ALVES", "PORTO ALEGRE", "J189", "20", "20-A",
+        ["1", "5001", "PACIENTE EXEMPLO UM", "7001", "1958-03-12", "2026-02-05T22:40:00", "PARDA", "M", "81.4",
+          "2026-02-06T07:10:00", "1.74", "", "", "DRA EXEMPLO UM", "PORTO ALEGRE", "J189", "20", "20-A",
           "2026-02-06T04:15:00"],
-        ["1", "5002", "MARIA APARECIDA LIMA", "7002", "1991-07-28", "2026-02-06T10:15:00", "BRANCA", "F", "64.2",
-          "2026-02-06T10:40:00", "1.62", "", "", "DR BRUNO MENDES", "CAMPINAS", "K802", "10", "102-B",
+        ["1", "5002", "PACIENTE EXEMPLO DOIS", "7002", "1991-07-28", "2026-02-06T10:15:00", "BRANCA", "F", "64.2",
+          "2026-02-06T10:40:00", "1.62", "", "", "DR EXEMPLO DOIS", "CAMPINAS", "K802", "10", "102-B",
           "2026-02-06T10:15:00"],
       ],
     },
@@ -1526,24 +1542,24 @@
       fileName: "evolucao",
       fields: ["FKEVOLUCAO", "DTEVOLUCAO", "NRATENDIMENTO", "NOME", "CARGO", "TEXTO"],
       rows: [
-        ["6001", "2026-02-07T07:30:00", "7001", "DRA FERNANDA ALVES", "MÉDICO",
+        ["6001", "2026-02-07T07:30:00", "7001", "DRA EXEMPLO UM", "MÉDICO",
           "Paciente no 2o dia de internação em UTI por pneumonia adquirida na comunidade. " +
           "Mantem-se febril (37.9C), em cateter nasal de O2 a 3 L/min, saturando 94%. " +
           "Ausculta com estertores em base direita. Hemocultura positiva para S. pneumoniae, " +
           "sensivel a ceftriaxona - mantida a antibioticoterapia. Creatinina em elevacao " +
           "(1.52 para 1.84): reavaliar doses ajustadas a funcao renal."],
-        ["6002", "2026-02-07T10:15:00", "7001", "CARLA MENEZES", "FARMACÊUTICO",
+        ["6002", "2026-02-07T10:15:00", "7001", "FARMACEUTICA EXEMPLO", "FARMACÊUTICO",
           "Revisão da prescrição. Ceftriaxona 1g 12/12h adequada ao foco e ao antibiograma. " +
           "Clearance estimado em 41 ml/min: sugerida reducao da furosemida para 1 ampola 12/12h " +
           "e monitorizacao de potassio. Paciente alérgico a sulfametoxazol + trimetoprima - " +
           "nenhum item da prescrição conflita. Orientada a enfermagem quanto a diluicao da " +
           "ceftriaxona em 100 ml de SF e infusao em 30 minutos."],
-        ["6003", "2026-02-07T19:00:00", "7001", "PAULO RICARDO SOUZA", "ENFERMEIRO",
+        ["6003", "2026-02-07T19:00:00", "7001", "ENFERMEIRO EXEMPLO", "ENFERMEIRO",
           "Plantao sem intercorrencias. Dieta enteral em infusao continua, boa tolerancia, " +
           "sem residuo gastrico significativo. Diurese de 1450 ml nas últimas 24h. " +
           "Metoclopramida suspensa as 14h20 conforme avaliacao médica. Acesso venoso central " +
           "em jugular direita, sem sinais flogisticos."],
-        ["6004", "2026-02-07T09:40:00", "7002", "DR BRUNO MENDES", "MÉDICO",
+        ["6004", "2026-02-07T09:40:00", "7002", "DR EXEMPLO DOIS", "MÉDICO",
           "Pos-operatorio imediato de colecistectomia videolaparoscopica, sem intercorrencias. " +
           "Dor controlada com dipirona. Aceita dieta liquida. Previsao de alta em 24 horas."],
       ],
@@ -1651,13 +1667,13 @@
       // O que o paciente usava em casa, registrado na admissao.
       rows: [
         ["1", "20", "1051", "5001", "7001", "SUS", "2026-02-06T05:10:00", "", "20-A", "4417", "1051001",
-          "DRA FERNANDA ALVES", "2012", "CP", "24/24", "1", "VO", "08:00", "Medicamentos", "S"],
+          "DRA EXEMPLO UM", "2012", "CP", "24/24", "1", "VO", "08:00", "Medicamentos", "S"],
         // FKMEDICAMENTO 0: item de texto livre sem cadastro associado, conforme
         // o valor padrao definido no Anexo I.
         ["1", "20", "1051", "5001", "7001", "SUS", "2026-02-06T05:10:00", "", "20-A", "4417", "1051002",
-          "DRA FERNANDA ALVES", "0", "CP", "24/24", "1", "VO", "ATENOLOL 25MG USO DOMICILIAR", "Medicamentos", "S"],
+          "DRA EXEMPLO UM", "0", "CP", "24/24", "1", "VO", "ATENOLOL 25MG USO DOMICILIAR", "Medicamentos", "S"],
         ["1", "10", "1052", "5002", "7002", "PARTICULAR", "2026-02-06T11:05:00", "", "102-B", "4418", "1052001",
-          "DR BRUNO MENDES", "2012", "CP", "24/24", "1", "VO", "08:00", "Medicamentos", "S"],
+          "DR EXEMPLO DOIS", "2012", "CP", "24/24", "1", "VO", "08:00", "Medicamentos", "S"],
       ],
     },
   };
