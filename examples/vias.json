@@ -1,7 +1,7 @@
 [
   {
     "TIPO": "map-routes",
-    "VALOR": "[{\"id\":\"VO\",\"value\":\"Via Oral\"},{\"id\":\"IV\",\"value\":\"Intravenosa\"}]",
+    "VALOR": "[{\"id\":\"VO\",\"value\":\"Via oral\"},{\"id\":\"IV\",\"value\":\"Intravenosa\"},{\"id\":\"IM\",\"value\":\"Intramuscular\"},{\"id\":\"SC\",\"value\":\"Subcutânea\"},{\"id\":\"SNE\",\"value\":\"Sonda nasoenteral\"},{\"id\":\"INAL\",\"value\":\"Inalatória\"}]",
     "UPDATE_AT": "2026-02-07T03:00:00",
     "UPDATE_BY": "0"
   }

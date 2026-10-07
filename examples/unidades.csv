@@ -1,3 +1,9 @@
 FKHOSPITAL,FKUNIDADEMEDIDA,NOME
-1,MG,Miligramas
-1,ML,Mililitros
+1,MG,Miligrama
+1,ML,Mililitro
+1,AMP,Ampola
+1,FA,Frasco-ampola
+1,SER,Seringa
+1,CP,Comprimido
+1,UI,Unidade internacional
+1,UND,Unidade

@@ -1,0 +1,1461 @@
+/* ------------------------------------------------------------------
+   Tela de Prescricao da NoHarm dentro do validador.
+   Tudo fica sob .nhui porque o validador ja usa o prefixo .nh- (e ate
+   .nh-preview) para as proprias telas: sem o escopo, as regras de tabela
+   e de card vazariam para o passo a passo.
+   Valores transcritos dos styled-components da aplicacao.
+   ------------------------------------------------------------------ */
+.nhui {
+  --nhui-primary: #2e3c5a;
+  --nhui-text: #696766;
+  --nhui-detail: #e0e0e0;
+
+  background: #eff1f4;
+  /* sangra o padding do .nh-content para a tela ocupar a area toda */
+  margin: -40px -32px;
+  padding: 25px 18px;
+  min-height: 100vh;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+/* --------------------------- cabecalho da tela -------------------- */
+.nhui .nhui-page-header {
+  margin-bottom: 15px;
+}
+.nhui .nhui-page-title {
+  color: var(--nhui-primary);
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  text-align: left;
+  margin: 0;
+}
+.nhui .nhui-page-title .legend {
+  font-size: 14px;
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+.nhui .nhui-atendimento {
+  cursor: pointer;
+}
+.nhui .nhui-atendimento:hover {
+  text-decoration: underline;
+}
+/* ------------------------------- cartoes -------------------------- */
+.nhui .nhui-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 5px;
+  padding: 6px 15px;
+  background: #fff;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02),
+    0 2px 4px 0 rgba(0, 0, 0, 0.02);
+}
+.nhui .nhui-card.full-height,
+/* O .max-height do fonte capava o cartao em 315px. Numa linha mais alta que
+   isso o cartao de Exames ficava mais curto que os vizinhos e a linha inteira
+   parecia torta — principalmente com a tela vazia. Quem precisa de limite e a
+   lista de exames (.exam-list), que ja tem o seu. */
+.nhui .nhui-card.max-height {
+  height: 100%;
+}
+.nhui .nhui-card h3.title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 400;
+  color: #2e3c5a;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+.nhui .nhui-card .content {
+  flex: 1;
+}
+.nhui .nhui-card .footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  min-height: 31px;
+}
+.nhui .nhui-card .footer .action button {
+  padding-right: 0;
+}
+.nhui .nhui-card .stat-marker {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 6px;
+  width: 100%;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+.nhui .nhui-card .stat-variation {
+  color: var(--nhui-text);
+}
+.nhui .nhui-card .stat-variation .stat-variation-number {
+  display: flex;
+  align-items: center;
+  font-size: 30px;
+  font-weight: 300;
+}
+.nhui .nhui-card .stat-variation .stat-variation-number .anticon {
+  font-size: 30px;
+  margin-left: 5px;
+}
+.nhui .nhui-card .stat-variation .stat-variation-percentage {
+  font-size: 13px;
+}
+.nhui .nhui-card .stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  color: var(--nhui-text);
+}
+.nhui .nhui-card .stats.stats-center {
+  max-width: 290px;
+  margin: 0 auto;
+}
+.nhui .nhui-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 180px;
+}
+
+/* ------------------------------ paciente -------------------------- */
+.nhui .nhui-patient {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+.nhui .nhui-patient .patient-header {
+  display: flex;
+  align-items: flex-start;
+  padding-bottom: 5px;
+}
+.nhui .nhui-patient .patient-header-name {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--nhui-primary);
+  display: flex;
+  align-items: center;
+}
+.nhui .nhui-patient .patient-header-name .nhui-dica-campo {
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: 400;
+  color: #9b9b9b;
+  background: #f4f4f4;
+  border-radius: 10px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+.nhui .nhui-patient .patient-header-action {
+  display: flex;
+  align-items: center;
+}
+.nhui .nhui-patient .patient-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: #eff1f4;
+}
+.nhui .nhui-patient .patient-menu:hover {
+  color: #1890ff;
+}
+.nhui .nhui-patient .patient-body {
+  flex: 1;
+}
+.nhui .nhui-patient .patient-data {
+  display: flex;
+  flex-wrap: wrap;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  border-left: 1px solid #e0e0e0;
+  border-right: 1px solid #e0e0e0;
+  border-radius: 5px;
+  border-top-left-radius: 0;
+  height: 100%;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02),
+    0 2px 4px 0 rgba(0, 0, 0, 0.02);
+}
+.nhui .nhui-patient .patient-data-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+  padding: 5px 0 5px 10px;
+  border-bottom: 1px solid #e0e0e0;
+  overflow-x: clip;
+}
+.nhui .nhui-patient .patient-data-item.full {
+  width: 100%;
+  border-bottom: 0;
+  border-right: 0 !important;
+}
+.nhui .nhui-patient .patient-data-item:nth-child(odd) {
+  border-right: 1px solid #e0e0e0;
+}
+.nhui .nhui-patient .patient-data-item-label {
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--nhui-primary);
+}
+.nhui .nhui-patient .patient-data-item-value {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--nhui-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.nhui .nhui-patient .patient-data-item-value .small {
+  font-size: 12px;
+  font-weight: 300;
+}
+.nhui .nhui-patient .patient-data-item-value .tag {
+  display: inline-block;
+  font-size: 11px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 5px;
+  padding: 0 5px;
+  margin-left: 5px;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.65);
+  font-weight: 500;
+}
+.nhui .nhui-patient .patient-data-item-value .tag:first-child {
+  margin-left: 0;
+}
+.nhui .nhui-patient .patient-data-item.edit:hover .patient-data-item-edit {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateX(0);
+}
+.nhui .nhui-patient .patient-data-item-edit {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 20%;
+  opacity: 0;
+  pointer-events: none;
+  background: #7ebe9a;
+  transform: translateX(100%);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nhui .nhui-patient .ant-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.nhui .nhui-patient .ant-tabs .ant-tabs-nav {
+  margin: 0;
+}
+.nhui .nhui-patient .ant-tabs .ant-tabs-tab {
+  background: rgba(255, 255, 255, 0.5);
+}
+.nhui .nhui-patient .ant-tabs .ant-tabs-tab-active {
+  background: #fff;
+}
+.nhui .nhui-patient .ant-tabs-tab.ant-tabs-tab-active .anticon,
+.nhui .nhui-patient .ant-tabs-tab:hover .anticon {
+  color: #1890ff;
+}
+
+/* ------------------------------- alertas -------------------------- */
+.nhui .nhui-alerts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* As linhas dividem a altura do cartao: sem isso a grade parava no meio e
+     sobrava um vazio embaixo quando nao ha dado. */
+  grid-auto-rows: minmax(34px, 1fr);
+  height: 100%;
+  column-gap: 6px;
+  row-gap: 8px;
+  margin-bottom: 2px;
+}
+
+/* Com a tela vazia os cartoes tem pouco conteudo: centralizar o que ha deixa a
+   linha simetrica, em vez de tudo encostado no topo. */
+.nhui .nhui-card .content {
+  min-height: 0;
+}
+
+.nhui .nhui-card.nhui-vazio,
+.nhui .nhui-card-alertas {
+  display: flex;
+  flex-direction: column;
+}
+
+.nhui .nhui-card-alertas > .content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.nhui .nhui-card.nhui-vazio > .content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+@media only screen and (min-width: 1515px) {
+  .nhui .nhui-alerts {
+    column-gap: 10px;
+  }
+}
+.nhui .nhui-alerts > div {
+  padding: 8px 4px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: 500;
+  min-width: 0;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--nhui-text);
+}
+@media only screen and (min-width: 1515px) {
+  .nhui .nhui-alerts > div {
+    font-size: 15px;
+  }
+}
+.nhui .nhui-alerts > div.alert {
+  border: 1px solid #f68c97;
+  background: #f8dee2;
+}
+.nhui .nhui-alerts > div span:first-child {
+  margin-right: 4px;
+  font-size: 18px;
+  display: inline-flex;
+}
+.nhui .nhui-alerts > div:hover {
+  box-shadow: 0px 1px 4px 0px rgb(0 0 0 / 16%);
+}
+
+/* ------------------------------ ver mais -------------------------- */
+.nhui .nhui-see-more {
+  text-align: center;
+  padding-top: 5px;
+  color: var(--nhui-text);
+}
+.nhui .nhui-see-more .ant-btn-link {
+  font-size: 18px;
+  padding-left: 0;
+  padding-right: 0;
+  color: var(--nhui-text);
+}
+
+/* --------------------------- abas da prescricao ------------------- */
+.nhui .nhui-tabs {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+}
+.nhui .nhui-tabs .ant-tabs-nav {
+  width: 100%;
+  margin: 0;
+  z-index: 1;
+}
+.nhui .nhui-tabs .ant-tabs-nav .ant-tabs-tab:nth-child(5) {
+  margin-left: 50px !important;
+}
+.nhui .nhui-tabs .ant-tabs-tab {
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+.nhui .nhui-tabs .ant-tabs-tab.ant-tabs-tab-active {
+  background: #fff !important;
+}
+.nhui .nhui-tabs .ant-tabs-content {
+  background: #fff;
+  border-radius: 4px;
+  min-height: 100px;
+  padding: 20px 12px 5px;
+}
+
+/* -------------------------------- toolbox ------------------------- */
+.nhui .nhui-toolbox {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+@media (min-width: 768px) {
+  .nhui .nhui-toolbox {
+    flex-direction: row;
+  }
+}
+.nhui .nhui-toolbox .filters {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 32px;
+}
+.nhui .nhui-toolbox .filters .add-filter {
+  background-color: #7ebe9a;
+  border-color: #7ebe9a;
+  border-style: dashed;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.nhui .nhui-toolbox .filters .add-filter:hover {
+  background: #4096ff;
+}
+.nhui .nhui-toolbox .viz-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+@media (min-width: 768px) {
+  .nhui .nhui-toolbox .viz-mode {
+    flex-wrap: nowrap;
+  }
+}
+.nhui .nhui-toolbox .viz-mode .ant-dropdown-button {
+  width: 200px;
+}
+.nhui .nhui-toolbox .viz-mode button {
+  margin-bottom: 8px;
+}
+
+/* -------------------------- collapse prescricao ------------------- */
+.nhui .nhui-group-collapse,
+.nhui .nhui-presc-collapse {
+  margin-bottom: 10px;
+}
+.nhui .nhui-presc-collapse > .ant-collapse-item {
+  background: #fafafa;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+.nhui .nhui-presc-collapse > .ant-collapse-item .ant-collapse-content {
+  background: #fff !important;
+}
+.nhui .nhui-group-collapse > .ant-collapse-item {
+  background: #e0e8ec;
+  border-bottom: 0 !important;
+}
+.nhui .nhui-group-collapse > .ant-collapse-item > .ant-collapse-content {
+  background: #fff !important;
+  border-left: 3px solid #e0e8ec;
+  border-radius: 0;
+  padding-top: 15px;
+}
+.nhui .nhui-group-collapse > .ant-collapse-item > .ant-collapse-content > .ant-collapse-content-box {
+  padding-right: 0;
+  padding-left: 10px;
+  position: relative;
+}
+.nhui .ant-collapse-header {
+  align-items: center !important;
+}
+
+.nhui .nhui-presc-header {
+  display: flex;
+  align-items: center;
+}
+.nhui .nhui-presc-header .panel-header-description {
+  padding-left: 15px;
+  padding-right: 50px;
+}
+.nhui .nhui-presc-header .panel-header-description .p-number {
+  padding-right: 10px;
+}
+.nhui .nhui-presc-header .panel-header-description a {
+  color: rgba(0, 0, 0, 0.65);
+  text-decoration: none;
+}
+.nhui .nhui-presc-header .panel-header-description a:hover {
+  text-decoration: underline;
+}
+.nhui .nhui-presc-header .panel-header-description .title {
+  font-size: 16px;
+}
+.nhui .nhui-presc-header .panel-header-description .subtitle {
+  display: block;
+  font-size: 14px;
+  opacity: 0.6;
+}
+.nhui .nhui-presc-header .panel-header-description .subtitle > span {
+  padding-left: 15px;
+}
+.nhui .nhui-presc-header .panel-header-description .subtitle > span:first-child {
+  padding-left: 0;
+}
+.nhui .nhui-presc-extra {
+  display: flex;
+  align-items: center;
+}
+
+/* -------------------------------- tabela -------------------------- */
+.nhui .nhui-table .ant-table-thead > tr > th,
+.nhui .nhui-table .ant-table-tbody > tr > td {
+  padding: 5px;
+}
+.nhui .nhui-table .ant-table-tbody > tr > td {
+  color: rgba(0, 0, 0, 0.65);
+}
+.nhui .nhui-table .ant-table-thead > tr > th {
+  background: transparent;
+  color: var(--nhui-primary);
+  font-weight: 600;
+}
+.nhui .nhui-table .ant-table-thead > tr > th::before {
+  display: none !important;
+}
+.nhui .nhui-table .ant-table-tbody > tr:hover:not(.ant-table-expanded-row) > td {
+  background: rgba(244, 244, 244, 0.8);
+}
+.nhui .nhui-table .ant-table-row-expand-icon-cell,
+.nhui .nhui-table .ant-table-expand-icon-th {
+  width: 30px;
+  min-width: 30px;
+}
+
+.nhui .nhui-table .flag {
+  border-radius: 3px;
+  display: inline-block;
+  height: 15px;
+  width: 5px;
+}
+.nhui .nhui-table .flag.has-score {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 32px;
+  width: 13px;
+  border-radius: 7px;
+  font-size: 11px;
+  padding-top: 1px;
+  cursor: pointer;
+}
+.nhui .nhui-table .flag.has-score:before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: #fff;
+  top: 50%;
+}
+.nhui .nhui-table .flag.red { background-color: #f44336; color: #fff; }
+.nhui .nhui-table .flag.orange { background-color: #f57f17; color: #fff; }
+.nhui .nhui-table .flag.yellow { background-color: #ffc107; color: #fff; }
+.nhui .nhui-table .flag.green { background-color: #7ebe9a; color: #fff; }
+
+.nhui .nhui-table .new-item td:not(:nth-child(1)) {
+  font-weight: 500;
+}
+.nhui .nhui-table .new-item td:not(:nth-child(1)) a {
+  font-weight: 500;
+}
+.nhui .nhui-table .whitelist td:not(:nth-child(1)),
+.nhui .nhui-table .whitelist td:not(:nth-child(1)) a {
+  opacity: 0.45;
+}
+.nhui .nhui-table .whitelist .score-container {
+  transition: opacity 0.3s linear;
+  opacity: 0;
+}
+.nhui .nhui-table .whitelist:hover .score-container {
+  opacity: 1;
+}
+.nhui .nhui-table .whitelist:hover td:not(:nth-child(1)),
+.nhui .nhui-table .whitelist:hover td:not(:nth-child(1)) a {
+  opacity: 1;
+}
+
+.nhui .nhui-table .divider-row .ant-table-row-expand-icon {
+  display: none;
+}
+.nhui .nhui-table .start-row {
+  height: 4px;
+}
+.nhui .nhui-table .start-row td {
+  padding: 0 !important;
+  border-bottom: 0;
+}
+.nhui .nhui-table .start-row td:nth-child(1) {
+  background: rgba(16, 142, 233, 0.5);
+}
+.nhui .nhui-table .start-row.solution-group td:nth-child(1) {
+  background: rgb(169 145 214);
+}
+.nhui .nhui-table .group-row td:nth-child(1) {
+  border-left: 3px solid rgba(16, 142, 233, 0.5);
+}
+.nhui .nhui-table .group-row.solution-group td:nth-child(1) {
+  border-left: 3px solid rgb(169 145 214);
+}
+.nhui .nhui-table .end-row {
+  height: 7px;
+}
+.nhui .nhui-table .end-row td {
+  padding: 0 !important;
+}
+.nhui .nhui-table .end-row td:nth-child(1) {
+  background: rgba(16, 142, 233, 0.5);
+  border-bottom: 4px solid #fff;
+}
+.nhui .nhui-table .end-row.solution-group td:nth-child(1) {
+  background: rgb(169 145 214);
+  border-bottom: 4px solid #fff;
+}
+.nhui .nhui-table .end-row:hover td:first-child {
+  background: rgba(16, 142, 233, 0.5) !important;
+}
+.nhui .nhui-table .end-row:hover td:not(:first-child) {
+  background: #fff !important;
+}
+.nhui .nhui-table .end-row.solution-group:hover td:first-child {
+  background: rgb(169 145 214) !important;
+}
+.nhui .nhui-table .solution:hover > td {
+  background: rgb(169 145 214 / 20%) !important;
+}
+.nhui .nhui-table .summary-row td {
+  padding: 0 !important;
+}
+.nhui .nhui-table .summary-row td:not(:first-child) {
+  opacity: 0.45;
+}
+.nhui .nhui-table .summary-row:hover td {
+  opacity: 1;
+  background: rgb(169 145 214 / 20%) !important;
+}
+
+.nhui .nhui-table-tags {
+  display: flex;
+  justify-content: space-evenly;
+}
+.nhui .nhui-table-tags span.tag {
+  display: flex;
+  align-items: center;
+  width: 20px;
+  cursor: pointer;
+}
+
+.nhui .nhui-drug-link {
+  display: inline-block;
+  position: relative;
+  color: rgba(0, 0, 0, 0.65);
+  text-decoration: none;
+  cursor: pointer;
+}
+.nhui .nhui-drug-link:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------ aware tag ------------------------- */
+.nhui .nhui-aware {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: #f1f3f7;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  color: #4b5872;
+}
+.nhui .nhui-aware .aware-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.nhui .nhui-aware-1 .aware-dot { background: #7ebe9a; }
+.nhui .nhui-aware-2 .aware-dot { background: #f0a04b; }
+.nhui .nhui-aware-3 .aware-dot { background: #f44336; }
+.nhui .nhui-aware-4 .aware-dot { background: #7b1fa2; }
+
+/* --------------------- indicadores de evolucao -------------------- */
+/* cores de ClinicalNotesIndicator */
+.nhui .nhui-ind-acesso       { border-color: #68facf; background: #68facf0a; }
+.nhui .nhui-ind-allergy      { border-color: #e65100; background: rgba(230, 81, 0, 0.1); }
+.nhui .nhui-ind-conduct      { border-color: #ff9f1c; background: rgba(255, 159, 28, 0.1); }
+.nhui .nhui-ind-info         { border-color: #1919e0; background: rgba(25, 25, 224, 0.1); }
+.nhui .nhui-ind-dialysis     { border-color: #3b3b35; background: rgba(59, 59, 53, 0.1); }
+.nhui .nhui-ind-diseases     { border-color: #f1d302; background: rgba(241, 211, 2, 0.1); }
+.nhui .nhui-ind-complication { border-color: #e71d36; background: rgba(231, 29, 54, 0.1); }
+.nhui .nhui-ind-germes       { border-color: #22fa67; background: #22fa670a; }
+.nhui .nhui-ind-gestante     { border-color: #6bc6fa; background: #6bc6fa0a; }
+.nhui .nhui-ind-medications  { border-color: #662e9b; background: rgba(102, 46, 155, 0.1); }
+.nhui .nhui-ind-medprevio    { border-color: #662e9b; background: rgba(243, 239, 247, 0.1); }
+.nhui .nhui-ind-signs        { border-color: #c157a3; background: rgba(193, 87, 163, 0.1); }
+.nhui .nhui-ind-symptoms     { border-color: #43bccd; background: rgba(67, 188, 205, 0.1); }
+
+.nhui .nhui-card .stats .ind-tag {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  color: rgba(0, 0, 0, 0.65);
+  font-weight: 500;
+  height: 24px;
+  min-width: 24px;
+  padding: 0 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+}
+
+/* ------------------------------ importar -------------------------- */
+.nhui .nhui-import {
+  max-width: 560px;
+  margin: 60px auto;
+  text-align: center;
+}
+.nhui .nhui-import .nhui-page-title {
+  text-align: center;
+}
+.nhui .nhui-import-sub {
+  color: var(--nhui-text);
+  font-size: 15px;
+  margin: 6px 0 24px;
+}
+/* o dragger do antd herda height:100% e estica: trava em auto */
+.nhui .nhui-drop.ant-upload-wrapper,
+.nhui .nhui-drop.ant-upload-wrapper .ant-upload,
+.nhui .nhui-drop.ant-upload-wrapper .ant-upload-btn,
+.nhui .nhui-drop.ant-upload-wrapper .ant-upload-drag {
+  height: auto;
+}
+.nhui .nhui-drop.ant-upload-wrapper .ant-upload-drag {
+  background: #fff;
+  border-color: #cfd6e4;
+  padding: 26px 16px;
+}
+.nhui .nhui-drop .ant-upload-drag-icon .anticon {
+  color: #7ebe9a;
+}
+.nhui .nhui-import-demo {
+  margin-top: 10px;
+}
+
+/* As duas saidas do dropzone: ver um exemplo, ou ir buscar o layout da view */
+.nhui .nhui-import-saidas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 12px;
+}
+
+/* ------------------------------- avisos --------------------------- */
+.nhui .nhui-aviso {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--nhui-text);
+}
+
+/* -------------------------- item suspenso ------------------------- */
+.nhui .nhui-table .suspended td:not(:nth-child(1)),
+.nhui .nhui-table .suspended td:not(:nth-child(1)) a {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.nhui .nhui-table .suspended:hover td:not(:nth-child(1)),
+.nhui .nhui-table .suspended:hover td:not(:nth-child(1)) a {
+  opacity: 1;
+}
+
+/* --------------------- lugares de importar ------------------------ */
+/* onde falta dado, a area pede a view que a alimenta */
+.nhui .nhui-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+  min-height: 150px;
+}
+.nhui .nhui-slot-min {
+  min-height: 56px;
+  padding: 8px;
+}
+.nhui .nhui-slot-btn {
+  border: 1px dashed #b7c3d6;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--nhui-primary);
+  font-size: 13px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.2s linear;
+}
+.nhui .nhui-slot-btn:hover {
+  border-color: #7ebe9a;
+  color: #4b8f6c;
+}
+.nhui .nhui-slot-erro {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #dc2626;
+  text-align: center;
+}
+.nhui .nhui-patient-vazio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* os cadastros que trocam o codigo pelo nome, ao lado dos filtros */
+.nhui .nhui-cadastro {
+  margin-left: 8px;
+  margin-bottom: 8px;
+}
+.nhui .nhui-cadastro-ok {
+  margin-left: 8px;
+  margin-bottom: 8px;
+  background: #eaf6ef;
+  border-color: #9ed3b4;
+  color: #3f7d5c;
+}
+/* medicamento que chegou so como codigo */
+.nhui .nhui-drug-link.sem-nome {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+/* ------------------------------ exames ---------------------------- */
+.nhui .nhui-exam {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  background: #fff;
+}
+.nhui .nhui-exam.alerta {
+  border-color: #f68c97;
+  background: #f8dee2;
+}
+.nhui .nhui-exam:hover {
+  box-shadow: 0px 1px 4px 0px rgb(0 0 0 / 16%);
+}
+.nhui .nhui-exam .name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--nhui-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.nhui .nhui-exam .icon {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.nhui .nhui-exam .icon > span {
+  font-size: 12px;
+  margin-right: 5px;
+  color: var(--nhui-text);
+}
+
+/* ---------------------------- evolucoes --------------------------- */
+.nhui .nhui-stat-number {
+  text-align: center;
+  font-size: 34px;
+  font-weight: 300;
+  color: var(--nhui-text);
+  line-height: 1.2;
+}
+.nhui-evolucoes .nhui-evolucao {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e8ebef;
+}
+.nhui-evolucoes .nhui-evolucao:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.nhui-evolucoes .nhui-evolucao .topo {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.nhui-evolucoes .nhui-evolucao p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ----------------------- orientacoes da entrada ------------------- */
+.nhui .nhui-passos {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+  text-align: left;
+}
+.nhui .nhui-passos li {
+  counter-increment: passo;
+  position: relative;
+  padding-left: 30px;
+  margin-bottom: 7px;
+  font-size: 13px;
+  color: var(--nhui-text);
+}
+.nhui .nhui-passos li::before {
+  content: counter(passo);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e6efe9;
+  color: #3f7d5c;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ------------------- escalada: os cadastros ----------------------- */
+.nhui .nhui-escada {
+  margin-top: 14px;
+}
+.nhui .nhui-escada-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nhui-primary);
+  margin-bottom: 8px;
+}
+.nhui .nhui-escada-titulo span {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--nhui-text);
+  margin-top: 1px;
+}
+.nhui .nhui-escada-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+}
+.nhui .nhui-cad {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--nhui-detail);
+  border-radius: 6px;
+  background: #fff;
+  text-align: left;
+  font: inherit;
+}
+.nhui .nhui-cad.clicavel {
+  cursor: pointer;
+  transition: box-shadow 0.2s linear;
+}
+.nhui .nhui-cad.clicavel:hover {
+  box-shadow: 0px 1px 4px 0px rgb(0 0 0 / 16%);
+}
+.nhui .nhui-cad.ok {
+  border-color: #9ed3b4;
+  background: #f4fbf7;
+}
+.nhui .nhui-cad.erro {
+  border-color: #f68c97;
+  background: #f8dee2;
+}
+.nhui .nhui-cad-topo strong {
+  display: block;
+  font-size: 14px;
+  color: var(--nhui-primary);
+}
+.nhui .nhui-cad-topo span {
+  display: block;
+  font-size: 12px;
+  color: var(--nhui-text);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nhui .nhui-cad-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.nhui .nhui-cad.ok .nhui-cad-status {
+  color: #3f7d5c;
+}
+.nhui .nhui-cad.erro .nhui-cad-status {
+  color: #b4232f;
+}
+
+/* ------------------------- detalhe do cadastro -------------------- */
+.nhui-detalhe .arquivo {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+.nhui-detalhe .bloco {
+  border: 1px solid var(--nhui-detail);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.nhui-detalhe .bloco.erro {
+  border-color: #f68c97;
+  background: #fff6f7;
+}
+.nhui-detalhe .bloco-titulo {
+  font-weight: 600;
+  font-size: 14px;
+  color: #2e3c5a;
+}
+.nhui-detalhe .bloco-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+.nhui-detalhe .valores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+  max-height: 180px;
+  overflow: auto;
+}
+.nhui-detalhe .valores code {
+  background: #fff;
+  border: 1px solid #e8ebef;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+
+/* ------------------------- dado que falta ------------------------- */
+.nhui .patient-data-item-value.falta {
+  color: #b9bfcc;
+}
+.nhui .nhui-pede {
+  padding: 8px 10px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nhui .nhui-card-nota {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9aa2b1;
+}
+
+/* a tela em modo exemplo ganha uma borda para nao ser confundida */
+.nhui.exemplo {
+  box-shadow: inset 0 0 0 2px #cdbbe8;
+}
+
+/* numero que a NoHarm calcularia e aqui esta simulado */
+.nhui .nhui-simulado {
+  font-size: 11px;
+  font-weight: 500;
+  color: #8a6fbf;
+  background: #f3eefa;
+  border: 1px solid #ddd0f0;
+  border-radius: 10px;
+  padding: 1px 7px;
+  cursor: help;
+}
+
+.nhui .nhui-tabela-vazia {
+  padding: 24px 0;
+  text-align: center;
+}
+.nhui .nhui-import {
+  max-width: 560px;
+  margin: 10px auto 24px;
+  text-align: center;
+}
+
+/* no exemplo nao ha o que importar: a barra fica so informativa */
+.nhui.exemplo .nhui-barra-chips {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* tabela condensada (botao de condensar da barra de acoes) */
+.nhui .nhui-table.denso .ant-table-thead > tr > th,
+.nhui .nhui-table.denso .ant-table-tbody > tr > td {
+  padding: 1px 5px;
+}
+.nhui .nhui-filtro {
+  max-width: 260px;
+}
+/* a seta de ordem gira quando vira decrescente */
+.nhui .btn-order {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.nhui .btn-order.order-desc {
+  transform: rotate(180deg);
+}
+
+/* ---------------- ajustes para bater com o fonte ------------------ */
+/* PrescriptionCard.jsx: .content .exam-list */
+.nhui .nhui-card .content .exam-list {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 10px;
+  row-gap: 8px;
+}
+@media (min-width: 768px) {
+  .nhui .nhui-card .content .exam-list {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+@media only screen and (min-width: 1515px) {
+  .nhui .nhui-card .content .exam-list {
+    column-gap: 15px;
+  }
+}
+.nhui .nhui-exam-wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  overflow: auto;
+}
+.nhui .nhui-exam-wrap > .exam-list {
+  width: 100%;
+}
+.nhui .nhui-exam-wrap > .ant-empty {
+  margin: auto;
+}
+/* o titulo do cartao tem o texto a esquerda e a acao a direita */
+.nhui .nhui-card .title .nhui-title-txt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* a tela em modo exemplo ganha uma borda para nao ser confundida */
+.nhui.exemplo {
+  box-shadow: inset 0 0 0 2px #cdbbe8;
+}
+
+/* numero que a NoHarm calcularia e aqui esta simulado */
+.nhui .nhui-simulado {
+  font-size: 11px;
+  font-weight: 500;
+  color: #8a6fbf;
+  background: #f3eefa;
+  border: 1px solid #ddd0f0;
+  border-radius: 10px;
+  padding: 1px 7px;
+  cursor: help;
+}
+
+.nhui .nhui-tabela-vazia {
+  padding: 24px 0;
+  text-align: center;
+}
+.nhui .nhui-import {
+  max-width: 560px;
+  margin: 10px auto 24px;
+  text-align: center;
+}
+
+/* no exemplo nao ha o que importar: a barra fica so informativa */
+.nhui.exemplo .nhui-barra-chips {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* tabela condensada (botao de condensar da barra de acoes) */
+.nhui .nhui-table.denso .ant-table-thead > tr > th,
+.nhui .nhui-table.denso .ant-table-tbody > tr > td {
+  padding: 1px 5px;
+}
+.nhui .nhui-filtro {
+  max-width: 260px;
+}
+/* a seta de ordem gira quando vira decrescente */
+.nhui .btn-order {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.nhui .btn-order.order-desc {
+  transform: rotate(180deg);
+}
+
+/* ---------------- ajustes para bater com o fonte ------------------ */
+/* PrescriptionCard.jsx: .content .exam-list */
+.nhui .nhui-card .content .exam-list {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 10px;
+  row-gap: 8px;
+}
+@media (min-width: 768px) {
+  .nhui .nhui-card .content .exam-list {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+@media only screen and (min-width: 1515px) {
+  .nhui .nhui-card .content .exam-list {
+    column-gap: 15px;
+  }
+}
+.nhui .nhui-exam-wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  overflow: auto;
+}
+.nhui .nhui-exam-wrap > .exam-list {
+  width: 100%;
+}
+.nhui .nhui-exam-wrap > .ant-empty {
+  margin: auto;
+}
+/* o titulo do cartao tem o texto a esquerda e a acao a direita */
+.nhui .nhui-card .title .nhui-title-txt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ------------------------- botao do exemplo ----------------------- */
+/* mesmo roxo do ScreeningFloatButtonGroup da tela de verdade, mas em pilula:
+   o quadrado padrao do antd tem 48px e corta o texto */
+.nhui-float-exemplo.ant-float-btn {
+  width: auto;
+  height: 44px;
+  border-radius: 22px;
+  box-shadow: 0 4px 14px rgba(107, 79, 160, 0.3);
+}
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-body {
+  width: auto;
+  height: 44px;
+  border-radius: 22px;
+  background: #a991d6;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px;
+}
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-body:hover {
+  background: #9a7fcd;
+}
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  width: auto;
+  height: auto;
+}
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-icon {
+  width: auto;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1;
+  color: #fff;
+}
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-description {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  padding: 0;
+  color: #fff;
+}
+.nhui-float-exemplo.ligado.ant-float-btn .ant-float-btn-body {
+  background: #6b4fa0;
+}
+
+/* a tela em modo exemplo ganha uma borda para nao ser confundida */
+.nhui.exemplo {
+  box-shadow: inset 0 0 0 2px #cdbbe8;
+}
+
+/* numero que a NoHarm calcularia e aqui esta simulado */
+.nhui .nhui-simulado {
+  font-size: 11px;
+  font-weight: 500;
+  color: #8a6fbf;
+  background: #f3eefa;
+  border: 1px solid #ddd0f0;
+  border-radius: 10px;
+  padding: 1px 7px;
+  cursor: help;
+}
+
+.nhui .nhui-tabela-vazia {
+  padding: 24px 0;
+  text-align: center;
+}
+.nhui .nhui-import {
+  max-width: 560px;
+  margin: 10px auto 24px;
+  text-align: center;
+}
+
+/* no exemplo nao ha o que importar: a barra fica so informativa */
+.nhui.exemplo .nhui-barra-chips {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* tabela condensada (botao de condensar da barra de acoes) */
+.nhui .nhui-table.denso .ant-table-thead > tr > th,
+.nhui .nhui-table.denso .ant-table-tbody > tr > td {
+  padding: 1px 5px;
+}
+.nhui .nhui-filtro {
+  max-width: 260px;
+}
+/* a seta de ordem gira quando vira decrescente */
+.nhui .btn-order {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.nhui .btn-order.order-desc {
+  transform: rotate(180deg);
+}
+
+/* ---------------- ajustes para bater com o fonte ------------------ */
+/* PrescriptionCard.jsx: .content .exam-list */
+.nhui .nhui-card .content .exam-list {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 10px;
+  row-gap: 8px;
+}
+@media (min-width: 768px) {
+  .nhui .nhui-card .content .exam-list {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+@media only screen and (min-width: 1515px) {
+  .nhui .nhui-card .content .exam-list {
+    column-gap: 15px;
+  }
+}
+.nhui .nhui-exam-wrap {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  overflow: auto;
+}
+.nhui .nhui-exam-wrap > .exam-list {
+  width: 100%;
+}
+.nhui .nhui-exam-wrap > .ant-empty {
+  margin: auto;
+}
+/* o titulo do cartao tem o texto a esquerda e a acao a direita */
+.nhui .nhui-card .title .nhui-title-txt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ------------------------- botao do exemplo ----------------------- */
+/* mesmo roxo do ScreeningFloatButtonGroup da tela de verdade */
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-body {
+  background: #a991d6;
+}
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-body:hover {
+  background: #9a7fcd;
+}
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-icon,
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-description {
+  color: #fff;
+}
+.nhui-float-exemplo.ant-float-btn .ant-float-btn-description {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0 6px;
+}
+.nhui-float-exemplo.ligado.ant-float-btn .ant-float-btn-body {
+  background: #6b4fa0;
+}
+
+/* --------------------- o botao do exemplo no cabecalho ------------- */
+.nhui .nhui-page-exemplo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.nhui .nhui-btn-exemplo.ant-btn {
+  border: 1px solid #c9b6e8;
+  background: #f6f1fd;
+  color: #6b4fa0;
+  font-weight: 500;
+}
+.nhui .nhui-btn-exemplo.ant-btn:hover {
+  border-color: #a991d6;
+  background: #efe7fa;
+  color: #553c86;
+}
+.nhui .nhui-btn-exemplo.ant-btn.ligado {
+  background: #a991d6;
+  border-color: #a991d6;
+  color: #fff;
+}
+.nhui .nhui-btn-exemplo.ant-btn.ligado:hover {
+  background: #9a7fcd;
+  border-color: #9a7fcd;
+  color: #fff;
+}
+
+/* ------------------- cartoes do "Ver mais" ------------------------ */
+/* PrescriptionCard.jsx: .content .text-content */
+.nhui .nhui-card .content .text-content {
+  max-height: 185px;
+  overflow: auto;
+  margin-top: 10px;
+  min-height: 60px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--nhui-text);
+}
+.nhui .nhui-card .footer .stats.light {
+  font-weight: 400;
+  font-size: 13px;
+}
+/* createIndicatorCardClasses(): a cor do indicador pinta o cartao inteiro */
+.nhui .nhui-card.nhui-ind-info,
+.nhui .nhui-card.nhui-ind-signs {
+  border: 1px solid;
+}

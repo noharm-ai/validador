@@ -104,8 +104,7 @@ body {
 /* ----------------------------------------------------------------- wizard */
 
 .nh-wizard {
-  max-width: 620px;
-  margin: 0 auto;
+  max-width: 1120px;
 }
 
 .nh-timeline {
@@ -424,11 +423,6 @@ body {
 }
 
 .nh-result-note a,
-.nh-review-list a {
-  color: inherit;
-  text-decoration: underline;
-}
-
 .nh-result-head {
   display: flex;
   align-items: center;
@@ -567,120 +561,62 @@ body {
   border-top: 1px solid var(--nh-line);
 }
 
+/* O veredito no fim da Validacao: era a tela de Resultado inteira, que repetia
+   as 14 views com o mesmo status que a lista acima ja mostra. */
+.nh-veredito {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 18px 20px;
+  border: 1px solid var(--nh-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.nh-veredito.ok {
+  border-color: #cfe8da;
+  background: var(--nh-green-soft);
+}
+
+.nh-veredito-icone {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.nh-veredito.ok .nh-veredito-icone {
+  color: var(--nh-green);
+}
+
+.nh-veredito.pendente .nh-veredito-icone {
+  color: #d8b24c;
+}
+
+.nh-veredito-texto {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nh-veredito-texto strong {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--nh-text);
+}
+
+.nh-veredito-texto i {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--nh-muted);
+}
+
 /* ----------------------------------------------------- review / plain pages */
 
 .nh-review,
-.nh-plain {
-  max-width: 640px;
-  margin: 0 auto;
-}
-
-.nh-review-head {
-  text-align: center;
-  padding: 24px 0 32px;
-}
-
-.nh-review-head > .anticon {
-  font-size: 44px;
-}
-
-.nh-review-head.is-ok > .anticon {
-  color: var(--nh-green);
-}
-
-.nh-review-head.is-error > .anticon {
-  color: #f59e0b;
-}
-
-.nh-review-head h2 {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 16px 0 6px;
-}
-
-.nh-review-head p {
-  color: var(--nh-muted);
-  margin: 0 0 20px;
-}
-
-.nh-review-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  background: #ffffff;
-  border: 1px solid var(--nh-line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.nh-review-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 16px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.nh-review-list li + li {
-  border-top: 1px solid var(--nh-line);
-}
-
-.nh-review-list li:hover {
-  background: #fafbfc;
-}
-
-.nh-review-list i {
-  font-size: 13px;
-  color: #d1d5db;
-}
-
 .nh-review-list li.is-ok i,
-.nh-review-list li.is-warn i {
-  color: var(--nh-green);
-}
-
-.nh-review-list li.is-error i {
-  color: var(--nh-red);
-}
-
-.nh-review-name {
-  flex: 1;
-}
-
 .nh-review-meta {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-.nh-review-errors {
-  font-size: 12px;
-  color: var(--nh-red);
-}
-
-.nh-plain h2 {
-  font-size: 22px;
-  font-weight: 600;
-  margin: 0 0 4px;
-}
-
-.nh-plain-sub {
-  color: var(--nh-muted);
-  font-size: 14px;
-  margin: 0 0 24px;
-}
-
-.nh-ref-group + .nh-ref-group {
-  margin-top: 20px;
-}
-
-.nh-ref-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.nh-ref-count {
   font-size: 12px;
   color: #9ca3af;
 }
@@ -878,3 +814,969 @@ body {
 }
 
 
+
+/* ------------------------------------------------------------------- base */
+
+.nh-base-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.nh-base-head h2 {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.nh-base-head p {
+  color: var(--nh-muted);
+  font-size: 14px;
+  margin: 6px 0 0;
+}
+
+.nh-base-contador {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--nh-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.nh-base-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* Lista de views: uma linha por view. Ver o comentario do `BaseRow` para o
+   porque de nao serem mais cartoes com dropzone. */
+.nh-view-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--nh-line);
+}
+
+.nh-view {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 14px 0 0;
+  border-bottom: 1px solid #f1f3f6;
+}
+
+/* Chegou pelo "Corrigir <View>": a lista do que falta, na linha de destino. */
+.nh-view-correcao {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 12px 42px;
+  padding: 12px 14px;
+  border: 1px solid #f0d9a8;
+  border-left: 3px solid #d8a93c;
+  border-radius: 6px;
+  background: #fffdf5;
+  font-size: 13px;
+}
+
+.nh-view-correcao strong {
+  color: var(--nh-text);
+}
+
+.nh-view-correcao span {
+  color: var(--nh-muted);
+}
+
+.nh-view-correcao-dica {
+  font-size: 12px;
+}
+
+/* O detalhe ocupa a linha inteira, abaixo do cabecalho dela. */
+.nh-view-detalhe {
+  flex: 1 0 100%;
+  padding: 4px 0 18px 42px;
+  border-top: 1px dashed var(--nh-line);
+  margin-top: -1px;
+}
+
+.nh-view:last-child {
+  border-bottom: none;
+}
+
+.nh-view.is-open {
+  background: #f7fbf9;
+}
+
+.nh-view-corpo {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 11px 0 11px 14px;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nh-view-estado {
+  flex: 0 0 auto;
+  width: 16px;
+  align-self: center;
+  line-height: 1;
+}
+
+.nh-view-ponto {
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: #d8dde4;
+}
+
+.nh-view.ok .nh-view-estado .anticon {
+  color: var(--nh-green);
+}
+
+.nh-view.error .nh-view-estado .anticon {
+  color: var(--nh-red);
+}
+
+/* Essencial x opcional. Fora do verde/vermelho de propósito: ali eles
+   significam "validou" e "deu erro", e isto e classificacao, nao estado. */
+.nh-tag {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-radius: 20px;
+  padding: 2px 8px;
+  line-height: 1.5;
+}
+
+.nh-tag.essencial {
+  color: #1d4ed8;
+  background: #eaf0fe;
+}
+
+.nh-tag.opcional {
+  color: #7c7f87;
+  background: #f0f1f4;
+}
+
+.nh-grupo-conta .nh-base-contador i {
+  font-style: normal;
+  color: #aeb4bd;
+}
+
+.nh-view-nome {
+  flex: 0 0 auto;
+  min-width: 140px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--nh-text);
+}
+
+.nh-view-info {
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  color: var(--nh-muted);
+}
+
+.nh-view.error .nh-view-info {
+  color: var(--nh-red);
+}
+
+.nh-view-arquivo,
+.nh-view-nota {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11.5px;
+  color: #b0b7c1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* As acoes ficam discretas ate o mouse passar: elas se repetem 14 vezes e
+   competiam com o que importa, que e o estado de cada view. */
+.nh-view-acoes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+
+.nh-view-baixar,
+.nh-view-remover,
+.nh-lote-remover {
+  padding: 2px 4px;
+  border: none;
+  background: none;
+  color: #c3c8d0;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.nh-view-remover:hover,
+.nh-lote-remover[title^="Remover"]:hover {
+  color: var(--nh-red);
+}
+
+.nh-view-baixar:hover,
+.nh-lote-remover[title^="Baixar"]:hover {
+  color: var(--nh-green);
+}
+
+.nh-lote-acoes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.nh-lote-acoes .nh-lote-destino {
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 5px;
+}
+
+.nh-lote-acoes .nh-lote-destino:hover {
+  background: #f2f5f8;
+}
+
+.nh-view-acoes > .nh-linkish {
+  opacity: 0;
+  transition: opacity 0.12s linear;
+}
+
+.nh-view:hover .nh-view-acoes > .nh-linkish,
+.nh-view-acoes > .nh-linkish:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .nh-view-acoes > .nh-linkish {
+    opacity: 1;
+  }
+}
+
+/* Tres colunas: os grupos tem 6, 6 e 2 views, entao as linhas fecham. */
+@media (min-width: 620px) {
+  .nh-base-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 940px) {
+  .nh-base-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Um bloco por grupo do Anexo I. O cliente recebeu o documento com estes
+   tres nomes, entao e por eles que ele procura a view. */
+/* Os tres grupos como sanfona, feita a mao. Fechados, a tela fica com o
+   essencial: mandar os arquivos. Ver o comentario no `BaseScreen`. */
+.nh-grupos {
+  border: 1px solid var(--nh-line);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.nh-grupo + .nh-grupo {
+  border-top: 1px solid var(--nh-line);
+}
+
+.nh-grupo-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nh-grupo-head:hover {
+  background: #fafbfc;
+}
+
+.nh-grupo-seta {
+  font-size: 11px;
+  color: #9aa1ab;
+  transition: transform 0.15s linear;
+}
+
+.nh-grupo.aberto .nh-grupo-seta {
+  transform: rotate(90deg);
+}
+
+.nh-grupo-conta {
+  margin-left: auto;
+}
+
+.nh-grupo-nome {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--nh-text);
+}
+
+.nh-grupo-conta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.nh-grupo-conta em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--nh-red);
+}
+
+/* As quatro views que a tela de Prescricao tambem recebe: o cartao continua
+   aceitando upload, e so avisa que ha a outra porta. */
+.nh-base-atalho {
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--nh-muted);
+  text-align: center;
+  cursor: pointer;
+}
+
+.nh-base-atalho:hover {
+  color: var(--nh-green);
+  text-decoration: underline;
+}
+
+.nh-base-origem {
+  display: block;
+  font-style: normal;
+  font-size: 10.5px;
+  color: var(--nh-green);
+}
+
+/* ---------------------------- upload em lote ---------------------------- */
+/* Uma zona para o lote inteiro, com o resultado POR ARQUIVO logo abaixo — e
+   isso que as diretrizes de upload multiplo pedem (PatternFly: "os arquivos
+   empilham verticalmente embaixo da zona"), e e o oposto do "Concluido" unico
+   que esconde quem entrou e quem nao. */
+.nh-lote {
+  margin-bottom: 18px;
+}
+
+/* Com a tela vazia o convite fala alto: e o caminho principal e o cliente
+   precisa saber que nao tem que mandar view por view. */
+.nh-lote-convite {
+  padding: 30px 24px 26px;
+  border: 2px dashed #cfdbd4;
+  border-radius: 10px;
+  background: #f7faf8;
+  text-align: center;
+}
+
+.nh-lote-convite .nh-lote-icone {
+  display: block;
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.nh-lote-convite h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--nh-text);
+  margin: 0 0 8px;
+}
+
+.nh-lote-convite p {
+  max-width: 64ch;
+  margin: 0 auto 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--nh-muted);
+}
+
+.nh-lote-convite > .nh-linkish {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 12.5px;
+}
+
+/* Barra, nao caixa: a acao acontece uma vez e nao merece 180px. Quem recebe o
+   arrasto e a tela inteira (`.nh-base-alvo`), entao o alvo nao precisa ser
+   grande para ser facil de acertar. */
+.nh-lote-barra {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 1px dashed #d7dde5;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.nh-lote-icone {
+  font-size: 19px;
+  color: var(--nh-green);
+  line-height: 1;
+}
+
+.nh-lote-texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nh-lote-texto strong {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--nh-text);
+}
+
+.nh-lote-texto i {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--nh-muted);
+}
+
+/* Enquanto o cliente arrasta, a tela toda vira alvo. */
+.nh-base {
+  position: relative;
+}
+
+.nh-base.arrastando::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border: 2px dashed var(--nh-green);
+  border-radius: 12px;
+  background: rgba(126, 190, 154, 0.07);
+  pointer-events: none;
+}
+
+.nh-base-alvo {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--nh-green);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+/* O que aconteceu com cada arquivo. Nunca um veredito so do lote. */
+.nh-lote-saida {
+  margin-top: 12px;
+  border: 1px solid var(--nh-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.nh-lote-saida-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--nh-line);
+  font-size: 13px;
+}
+
+.nh-lote-saida ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nh-lote-saida li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #f1f3f6;
+  font-size: 13px;
+}
+
+.nh-lote-saida li:last-child {
+  border-bottom: none;
+}
+
+.nh-lote-saida li.sem-dono {
+  background: #fffdf5;
+}
+
+/* Arquivo que outro da mesma view substituiu: fica na lista, apagado, dizendo
+   quem ficou no lugar dele. */
+.nh-lote-saida li.substituido .nh-lote-arquivo {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.nh-lote-saida li.substituido .nh-lote-destino i b {
+  font-weight: 500;
+  color: var(--nh-text);
+}
+
+.nh-lote-arquivo {
+  color: var(--nh-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nh-lote-destino {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  font-weight: 500;
+  color: var(--nh-text);
+}
+
+.nh-lote-destino i {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--nh-muted);
+}
+
+.nh-lote-saida li.ok .nh-lote-destino > .anticon {
+  color: var(--nh-green);
+}
+
+.nh-lote-saida li.error .nh-lote-destino > .anticon {
+  color: var(--nh-red);
+}
+
+.nh-lote-saida li.error .nh-lote-destino i {
+  color: var(--nh-red);
+}
+
+.nh-lote-escolha {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.nh-lote-escolha em {
+  font-style: normal;
+  font-size: 12px;
+  color: #b7791f;
+}
+
+.nh-lote-escolha select {
+  padding: 3px 8px;
+  border: 1px solid var(--nh-line);
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.nh-base-drop.ant-upload-wrapper,
+.nh-base-drop.ant-upload-wrapper .ant-upload,
+.nh-base-drop.ant-upload-wrapper .ant-upload-btn,
+.nh-base-drop.ant-upload-wrapper .ant-upload-drag {
+  height: auto;
+}
+
+.nh-base-drop.ant-upload-wrapper .ant-upload-drag {
+  margin-top: 10px;
+  padding: 14px 10px;
+  background: #fbfcfd;
+  border: 1.5px dashed #d5dae1;
+  border-radius: 9px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.nh-base-drop.ant-upload-wrapper .ant-upload-drag:hover {
+  border-color: var(--nh-green);
+  background: #f6fbf8;
+}
+
+.nh-base-card {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  background: #ffffff;
+  border: 1.5px solid var(--nh-line);
+  border-radius: 11px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.nh-base-card.vazio:hover {
+  border-color: #c9d2db;
+}
+
+.nh-base-card.is-open {
+  border-color: var(--nh-text);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+}
+
+.nh-base-card.ok {
+  border-color: rgba(70, 164, 106, 0.4);
+  background: var(--nh-green-soft);
+}
+
+.nh-base-card.error {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: var(--nh-red-soft);
+}
+
+.nh-base-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nh-base-topo i {
+  font-size: 14px;
+}
+
+.nh-base-card.ok .nh-base-topo i {
+  color: var(--nh-green);
+}
+
+.nh-base-card.error .nh-base-topo i {
+  color: var(--nh-red);
+}
+
+.nh-base-nome {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nh-base-acao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--nh-muted);
+  white-space: nowrap;
+}
+
+
+
+.nh-base-resumo {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nh-base-arquivo {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--nh-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nh-base-detalhe {
+  margin-top: 16px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--nh-line);
+  border-radius: 11px;
+}
+
+.nh-base-detalhe-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.nh-base-nota {
+  font-size: 13px;
+  color: var(--nh-muted);
+}
+
+.nh-card-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 11.5px;
+  color: #b6bdc7;
+}
+
+.nh-card-links .nh-card-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px !important;
+  border: 1px solid var(--nh-line) !important;
+  border-radius: 20px;
+  color: var(--nh-text) !important;
+  background: #fff !important;
+}
+
+.nh-card-links .nh-card-ref:hover {
+  border-color: var(--nh-green) !important;
+  color: var(--nh-green) !important;
+  text-decoration: none;
+}
+
+.nh-card-links-modelo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.nh-card-links button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--nh-muted);
+  cursor: pointer;
+}
+
+.nh-card-links button:hover {
+  color: var(--nh-green);
+  text-decoration: underline;
+}
+
+.nh-base-corpo {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nh-base-meta {
+  margin-top: 4px;
+  text-align: center;
+  font-size: 11px;
+  color: #b6bdc7;
+}
+
+.nh-ask-nota {
+  font-size: 12px;
+  color: var(--nh-muted);
+}
+
+.nh-review-rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--nh-muted);
+}
+
+/* O exemplo do modelo na tela de Referencia: a mesma amostra do passo a passo,
+   so que com os dados do modelo em vez dos do cliente. */
+.nh-exemplo {
+  margin-bottom: 16px;
+}
+
+.nh-exemplo .nh-preview-scroll {
+  max-height: 180px;
+}
+
+/* ------------------------------ tela de Inicio ------------------------- */
+/* Dois caminhos lado a lado, nao uma fila: validar (acao principal, coluna
+   larga) e ver o dado na NoHarm / consultar a referencia (coluna estreita).
+   Ver o comentario do `HomeScreen` para o porque de nao haver `Steps` aqui. */
+.nh-home {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.nh-home-topo {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.nh-home-logo {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+}
+
+.nh-home .nh-home-titulo.ant-typography {
+  margin: 0 0 2px;
+  font-size: 27px;
+  font-weight: 600;
+}
+
+.nh-home-acao,
+.nh-home-lateral {
+  height: 100%;
+}
+
+/* O cartao principal acompanha a altura da coluna ao lado. Para nao sobrar um
+   vazio embaixo, o texto fica em cima e a acao desce para o rodape do cartao. */
+.nh-home-acao .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.nh-home-acao .ant-space {
+  margin-top: auto;
+}
+
+.nh-home-acao h3,
+.nh-home-lateral h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--nh-text);
+  margin: 0 0 8px;
+}
+
+.nh-home-lateral h3 {
+  font-size: 15px;
+}
+
+.nh-home-acao p,
+.nh-home-lateral p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--nh-muted);
+  margin: 0 0 18px;
+}
+
+.nh-home-lateral p {
+  font-size: 13px;
+}
+
+/* A coluna estreita tem dois cartoes empilhados que dividem a altura do
+   cartao principal, para a linha fechar nos dois lados. */
+.nh-home-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.nh-home-lado > .ant-card {
+  flex: 1;
+}
+
+.nh-home-andamento {
+  margin: 4px 0 18px;
+}
+
+/* Os tres grupos do Anexo I com o que ja entrou: e o que o cliente quer saber
+   ao abrir o app, e e o que da corpo ao cartao em vez de um vazio. */
+.nh-home-grupos {
+  list-style: none;
+  margin: 0 0 22px;
+  padding: 0;
+  border-top: 1px solid var(--nh-line);
+}
+
+.nh-home-grupos li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--nh-line);
+  font-size: 13.5px;
+}
+
+.nh-home-grupo-nome {
+  color: var(--nh-text);
+  font-weight: 500;
+}
+
+.nh-home-grupo-conta {
+  color: var(--nh-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.nh-home-grupos li.ok .nh-home-grupo-conta {
+  color: var(--nh-green);
+}
+
+.nh-home-grupos li.erro .nh-home-grupo-conta {
+  color: var(--nh-red);
+}
+
+.nh-home-andamento .ant-progress {
+  margin-bottom: 2px;
+}
+
+.nh-home-andamento > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--nh-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.nh-home-andamento > span strong {
+  color: var(--nh-text);
+  font-weight: 600;
+}
+
+.nh-home-andamento > span i {
+  font-style: normal;
+}
+
+/* Sem o <b> em volta, o "essenciais" vira um item solto do flex e flutua no
+   meio da linha. */
+.nh-home-andamento > span b {
+  font-weight: 400;
+}
+
+.nh-home-rodape {
+  margin-top: 16px;
+}

@@ -1,7 +1,7 @@
 // Persistencia local do progresso da validacao.
 //
 // Fica tudo em localStorage, no browser do cliente: nenhum dado sai da maquina.
-// O conteudo dos arquivos NAO e guardado (prescricao de hospital real passa
+// O conteudo dos arquivos NÃO e guardado (prescricao de hospital real passa
 // facil de centenas de MB). O que persiste e:
 //   - a resposta sobre quais views opcionais o cliente tem;
 //   - o resultado de cada view ja validada (status, contagens, erros agrupados);
@@ -91,6 +91,16 @@
     }
   };
 
+  // Grupos de erro sem nenhum valor vindo do arquivo. Mantem a contagem de
+  // valores distintos, que e numero, nao dado.
+  const semValores = (grupos) =>
+    (grupos || []).map((grupo) => {
+      const limpo = Object.assign({}, grupo);
+      delete limpo.samples;
+      delete limpo.distinctValues;
+      return limpo;
+    });
+
   const Storage = {
     available,
     MAX_INDEX_KEYS,
@@ -121,6 +131,20 @@
 
     // Guarda o resultado de um passo. `index` e a lista de chaves da view,
     // guardada so quando ela e alvo de referencia cruzada e cabe no limite.
+    // O cliente le, no rodape da tela, que "o conteudo dos arquivos nao e
+    // guardado". Isso tem que ser verdade: nome, nascimento, CID e leito sao
+    // dado sensivel de saude (LGPD art. 11) e o navegador de hospital costuma
+    // ser de estacao compartilhada.
+    //
+    // Entao fica de fora daqui tudo que carrega valor vindo do arquivo:
+    // - `preview` (as 5 primeiras linhas do arquivo, com nome e nascimento);
+    // - `samples` e `distinctValues` dos grupos de erro, que citam o valor do
+    //   campo ('registro 1, valor "12/03/1958"').
+    //
+    // O que fica: status, contagens e a MENSAGEM do erro — suficiente para o
+    // relatorio e para o cliente saber o que corrigir. Os valores continuam na
+    // tela enquanto a sessao vive (vem de `stepResults`, que e memoria).
+    // `tests/validate_storage.js` tranca isso.
     saveStep(state, fileKey, result, meta, index, preview) {
       const steps = Object.assign({}, state.steps);
       const indexes = Object.assign({}, state.indexes);
@@ -138,15 +162,16 @@
         fileName: (meta && meta.fileName) || null,
         fileSize: (meta && meta.fileSize) || null,
         format: (meta && meta.format) || null,
+        // "previa" quando o arquivo entrou pela tela de Prescricao
+        origem: (meta && meta.origem) || null,
         recordCount: result.recordCount ?? null,
         columnCount: result.columnCount ?? null,
         malformedRowCount: result.malformedRowCount ?? 0,
         issueCount: result.issueCount ?? 0,
-        issueGroups: result.issueGroups || [],
+        issueGroups: semValores(result.issueGroups),
         hints: result.hints || [],
         warnings: result.warnings || [],
         extraFields: result.extraFields || [],
-        preview: preview || null,
         indexStored: storeIndex,
         indexTruncated: Array.isArray(index) && index.length > MAX_INDEX_KEYS,
         validatedAt: new Date().toISOString(),
@@ -216,8 +241,8 @@
 
     importJson(text) {
       const parsed = JSON.parse(text);
-      if (!parsed || typeof parsed !== "object") throw new Error("Arquivo de progresso invalido.");
-      if (parsed.version !== VERSION) throw new Error("Arquivo de progresso de uma versao diferente do validador.");
+      if (!parsed || typeof parsed !== "object") throw new Error("Arquivo de progresso inválido.");
+      if (parsed.version !== VERSION) throw new Error("Arquivo de progresso de uma versão diferente do validador.");
       return write(Object.assign(emptyState(), parsed));
     },
   };

@@ -23,6 +23,7 @@ const {
   Popconfirm,
   Tooltip,
   Modal,
+  Progress,
 } = antd;
 
 const {
@@ -36,7 +37,14 @@ const {
   ReloadOutlined,
   LoadingOutlined,
   RightOutlined,
+  ReadOutlined,
+  CloseOutlined,
 } = icons;
+
+// `app.js` tambem desestrutura hooks do React, mas ele carrega DEPOIS deste
+// arquivo — e `const` no escopo global nao pode ser declarado duas vezes.
+// Por isso aqui os hooks saem com outro nome, igual ao `Layout: WLayout`.
+const { useState: useEstado, useRef: useRefer } = React;
 
 const { Title, Text, Paragraph } = Typography;
 const { Dragger } = Upload;
@@ -75,6 +83,22 @@ const downloadText = (fileName, text, mime) => {
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+// Devolve o arquivo exatamente como o cliente mandou. So funciona na sessao em
+// que ele foi enviado: o conteudo dos arquivos nunca e guardado (prescricao de
+// hospital real passa de centenas de MB), entao depois do reload nao ha o que
+// baixar e o botao some.
+const baixarArquivo = (arquivo) => {
+  if (!arquivo) return;
+  const url = URL.createObjectURL(arquivo);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = arquivo.name;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -130,28 +154,28 @@ const SHORT_LABEL = {
   hospitais: "Hospitais",
   setores: "Setores",
   unidades: "Unidades",
-  frequencia: "Frequencias",
+  frequencia: "Frequências",
   vias: "Vias",
   medicamentos: "Medicamentos",
-  prescricao_agrupada: "Prescricoes agrupadas",
+  prescricao_agrupada: "Prescrições agrupadas",
   pessoa: "Pacientes",
   exame: "Exames",
   cultura: "Culturas",
   alergia: "Alergias",
-  evolucao: "Evolucoes",
-  transferencia: "Transferencias",
-  prescricoes: "Prescricoes",
-  conciliacao: "Conciliacao",
+  evolucao: "Evoluções",
+  transferencia: "Transferências",
+  prescricoes: "Prescrições",
+  conciliacao: "Conciliação",
 };
 
 // Uma linha, so onde evita uma duvida real. Onde o nome ja diz, fica vazio.
 const STEP_HINT = {
-  unidades: "O identificador e a sigla (MG, ML, AMP C/10ML), nao o ID da tabela.",
-  frequencia: "O identificador e a sigla (8/8, 12/12), nao o ID da tabela.",
-  vias: "Uma linha so: todas as vias vao no array JSON da coluna VALOR.",
+  unidades: "O identificador é a sigla (MG, ML, AMP C/10ML), não o ID da tabela.",
+  frequencia: "O identificador é a sigla (8/8, 12/12), não o ID da tabela.",
+  vias: "Uma linha só: todas as vias vao no array JSON da coluna VALOR.",
   conciliacao: "Item sem cadastro associado vai com FKMEDICAMENTO = 0.",
-  pessoa: "Escolha um atendimento e exporte so ele. As proximas views sao desse mesmo atendimento.",
-  prescricoes: "Do mesmo atendimento. Conferida contra tudo que voce ja enviou.",
+  pessoa: "Escolha um atendimento e exporte só ele. As próximas views são desse mesmo atendimento.",
+  prescricoes: "Do mesmo atendimento. Conferida contra tudo que você já enviou.",
 };
 
 // ---------------------------------------------------------------------------
@@ -162,13 +186,13 @@ const FIELD_COLUMNS = [
   { title: "Campo", dataIndex: "name", key: "name", width: "24%", render: (name) => <Text code>{name}</Text> },
   { title: "Tipo", dataIndex: "type", key: "type", width: "16%" },
   {
-    title: "Obrigatorio",
+    title: "Obrigatório",
     dataIndex: "required",
     key: "required",
     width: "14%",
-    render: (required) => (required ? <Tag color="red">Sim</Tag> : <Tag>Nao</Tag>),
+    render: (required) => (required ? <Tag color="red">Sim</Tag> : <Tag>Não</Tag>),
   },
-  { title: "Descricao", dataIndex: "description", key: "description" },
+  { title: "Descrição", dataIndex: "description", key: "description" },
 ];
 
 function FieldsTable({ fileKey }) {
@@ -272,7 +296,9 @@ function StepResult({ result, onFixRef }) {
         <div className="nh-result is-ok">
           <CheckCircleFilled />
           <div>
-            <strong>{result.recordCount} registros validados</strong>
+            <strong>
+              {result.recordCount} {result.recordCount === 1 ? "registro validado" : "registros validados"}
+            </strong>
             {warnings.map((warning) => (
               <div className="nh-result-note" key={warning}>
                 {warning}
@@ -285,7 +311,7 @@ function StepResult({ result, onFixRef }) {
     );
   }
 
-  // O cabecalho conta TIPOS de problema, que e o que a lista abaixo mostra.
+  // O cabecalho conta TIPOS de problema, que é o que a lista abaixo mostra.
   // Contar ocorrencias aqui fazia parecer que faltavam linhas na lista: "2
   // problemas" com um item so na tela.
   const tipos = issueGroups.length;
@@ -397,7 +423,7 @@ function WelcomeScreen({ progress, onStart, onResume, onRestart }) {
     <div className="nh-welcome">
       <img src="imgs/logo192.png" alt="NoHarm" className="nh-welcome-logo" />
       <h1>Validador NoHarm</h1>
-      <p className="nh-welcome-sub">Vamos conferir seus dados antes da integracao.</p>
+      <p className="nh-welcome-sub">Vamos conferir seus dados antes da integração.</p>
 
       {hasProgress ? (
         <Space direction="vertical" size={12} className="nh-welcome-actions">
@@ -405,18 +431,18 @@ function WelcomeScreen({ progress, onStart, onResume, onRestart }) {
             Continuar
           </Button>
           <Popconfirm
-            title="Apagar o progresso e recomecar?"
+            title="Apagar o progresso e recomeçar?"
             okText="Apagar"
             cancelText="Cancelar"
             onConfirm={onRestart}
           >
-            <Button type="text">Comecar do zero</Button>
+            <Button type="text">Começar do zero</Button>
           </Popconfirm>
         </Space>
       ) : (
         <div className="nh-welcome-actions">
           <Button type="primary" size="large" onClick={onStart} icon={<ArrowRightOutlined />}>
-            Comecar
+            Começar
           </Button>
         </div>
       )}
@@ -427,21 +453,67 @@ function WelcomeScreen({ progress, onStart, onResume, onRestart }) {
 }
 
 // ---------------------------------------------------------------------------
-// Linha do tempo: os 3 grupos, nada mais
-// ---------------------------------------------------------------------------
+// As views da Base nao dependem de nada, nem entre si.
+const VIEWS_BASE = FILE_TYPES.filter((file) => file.group === "cadastros").map((file) => file.key);
 
-function Timeline({ groupKey, position, total }) {
-  const atual = GROUPS.findIndex((group) => group.key === groupKey);
+// As quatro views que a tela de Prescricao recebe. Elas continuam aparecendo
+// na Validacao, dentro do grupo delas — o cliente precisa ver os tres grupos
+// inteiros —, mas como atalho para aquela tela, nao como um segundo upload.
+const VIEWS_NA_PRESCRICAO = ["prescricoes", "pessoa", "exame", "evolucao"];
+
+// Tudo que a tela de Prescricao consome: as quatro acima mais os cadastros,
+// de que ela precisa para trocar codigo por nome (FKMEDICAMENTO -> "DIPIRONA
+// ...") e para dizer se a view cobre os codigos usados.
+const VIEWS_DA_PRESCRICAO = VIEWS_NA_PRESCRICAO.concat([
+  "medicamentos",
+  "frequencia",
+  "unidades",
+  "setores",
+  "hospitais",
+  "vias",
+]);
+
+// Os grupos sao os do Anexo I (`GROUPS`), com o texto que o cliente le. Nao
+// invente agrupamento proprio: o cliente recebeu o documento com estes tres.
+const GRUPOS_VALIDACAO = [
+  {
+    key: "cadastros",
+    titulo: "Cadastros",
+    sub: "As tabelas de domínio que o resto da integração referência. Envie na ordem que quiser.",
+  },
+  {
+    key: "pacientes",
+    titulo: "Paciente",
+    sub: "Quem está internado e o que foi registrado no atendimento.",
+  },
+  {
+    key: "prescricoes",
+    titulo: "Prescrição",
+    sub: "O que foi prescrito para o paciente.",
+  },
+];
+
+const viewsDoGrupo = (groupKey) =>
+  FILE_TYPES.filter((file) => file.group === groupKey).map((file) => file.key);
+const VIEWS_MOVIMENTO = FILE_TYPES.filter(
+  (file) => file.group !== "cadastros" && !VIEWS_NA_PRESCRICAO.includes(file.key)
+).map((file) => file.key);
+
+// Sobrou so para a tela `steps` do desvio de chave estrangeira.
+const FASES = [
+  { key: "base", label: "Validação" },
+  { key: "movimento", label: "Correção" },
+];
+
+function Timeline({ fase, position, total }) {
+  const atual = FASES.findIndex((item) => item.key === fase);
 
   return (
     <ol className="nh-timeline">
-      {GROUPS.map((group, index) => (
-        <li
-          key={group.key}
-          className={index < atual ? "is-done" : index === atual ? "is-current" : ""}
-        >
+      {FASES.map((item, index) => (
+        <li key={item.key} className={index < atual ? "is-done" : index === atual ? "is-current" : ""}>
           <i>{index < atual ? <CheckCircleFilled /> : index + 1}</i>
-          <span>{group.label}</span>
+          <span>{item.label}</span>
           {index === atual && total > 0 && (
             <em>
               {position} de {total}
@@ -454,17 +526,624 @@ function Timeline({ groupKey, position, total }) {
 }
 
 // ---------------------------------------------------------------------------
+// Fase 1: a Base numa tela so
+// ---------------------------------------------------------------------------
+//
+// Seis views independentes. O cliente envia na ordem que quiser, ve o escopo
+// inteiro de cara e clica num cartao para abrir o detalhe.
+
+// Uma linha por view, nao um cartao. Com o reconhecimento pelo cabecalho, a
+// zona de lote la em cima ja manda cada arquivo para a view certa — inclusive
+// um arquivo so. Entao 14 dropzones viraram 14 alvos redundantes ocupando a
+// tela inteira. A linha guarda o que importa (o que e, em que pe esta) e leva
+// as acoes como texto, nao como bloco.
+function BaseRow({
+  file,
+  saved,
+  busy,
+  aberto,
+  naPrescricao,
+  onUpload,
+  onToggle,
+  onShowFields,
+  onExplainHospital,
+  onRemover,
+  arquivo,
+  onFixRef,
+  correcao,
+}) {
+  const schema = fileSchemaOf(file.key);
+  const status = saved ? saved.status : "pending";
+  const obrigatorios = schema.fields.filter((campo) => campo.required).length;
+  const essencial = isEssencial(file);
+
+  const info = saved
+    ? status === "error"
+      ? `${saved.issueCount} ${saved.issueCount === 1 ? "problema" : "problemas"}`
+      : `${saved.recordCount} ${saved.recordCount === 1 ? "registro" : "registros"}`
+    : `${obrigatorios} campos obrigatórios`;
+
+  return (
+    <li id={`view-${file.key}`} className={`nh-view ${saved ? status : "vazio"} ${aberto ? "is-open" : ""}`}>
+      <button
+        type="button"
+        className="nh-view-corpo"
+        onClick={saved ? onToggle : () => onShowFields(file.key)}
+      >
+        <span className="nh-view-estado">
+          {busy ? <LoadingOutlined /> : saved ? statusIcon(status) : <span className="nh-view-ponto" />}
+        </span>
+        <span className="nh-view-nome">{SHORT_LABEL[file.key]}</span>
+        {/* O cliente nao precisa mandar as 14: a etiqueta diz quais reprovam a
+            validacao se faltarem e quais ele manda so se tiver. */}
+        <span className={`nh-tag ${essencial ? "essencial" : "opcional"}`}>
+          {essencial ? "essencial" : "opcional"}
+        </span>
+        <span className="nh-view-info">{info}</span>
+        {saved && <span className="nh-view-arquivo">{saved.fileName}</span>}
+        {!saved && naPrescricao && <span className="nh-view-nota">entra também pela tela de Prescrição</span>}
+      </button>
+
+      <span className="nh-view-acoes">
+        <button type="button" className="nh-linkish" onClick={() => onShowFields(file.key)}>
+          campos e modelo
+        </button>
+        <Upload
+          accept=".csv,.json"
+          showUploadList={false}
+          beforeUpload={(arquivo) => onUpload(file.key, arquivo)}
+          disabled={busy}
+        >
+          <Button size="small">{saved ? "Reenviar" : "Enviar"}</Button>
+        </Upload>
+        {arquivo && (
+          <button
+            type="button"
+            className="nh-view-baixar"
+            title={`Baixar ${arquivo.name} como foi enviado`}
+            onClick={() => baixarArquivo(arquivo)}
+          >
+            <DownloadOutlined />
+          </button>
+        )}
+        {/* Mandou o arquivo errado? Tira. Sem isso o jeito de desfazer era
+            apagar o progresso inteiro. */}
+        {saved && (
+          <Popconfirm
+            title={`Remover o arquivo de ${SHORT_LABEL[file.key]}?`}
+            okText="Remover"
+            cancelText="Cancelar"
+            onConfirm={onRemover}
+          >
+            <button type="button" className="nh-view-remover" title="Remover este arquivo">
+              <CloseOutlined />
+            </button>
+          </Popconfirm>
+        )}
+      </span>
+
+      {/* O detalhe abre na propria linha. Antes ele ia para o rodape da tela e
+          o cliente clicava numa view e a resposta aparecia 800px abaixo. */}
+      {/* Chegou aqui pelo "Corrigir <View>" de outra view: a etapa de destino
+          nao diz so "corrija", ela lista os valores que faltam, ordenados para
+          o cliente colar no filtro da view. */}
+      {correcao && (
+        <div className="nh-view-correcao">
+          <strong>
+            Inclua {correcao.valores.length}{" "}
+            {correcao.valores.length === 1 ? "valor" : "valores"} em {correcao.refField}
+          </strong>
+          <span>
+            {SHORT_LABEL[correcao.origem]} usa {correcao.valores.length === 1 ? "este codigo" : "estes codigos"}{" "}
+            e esta view nao traz:
+          </span>
+          <div className="nh-issue-values">
+            {ordenarValores(correcao.valores).map((valor) => (
+              <span className="nh-chip" key={valor}>
+                {valor}
+              </span>
+            ))}
+          </div>
+          <span className="nh-view-correcao-dica">
+            Normalmente e o filtro da view que esta estreito demais (`WHERE`). Reenvie depois de ajustar —
+            {" "}{SHORT_LABEL[correcao.origem]} e revalidada sozinha.
+          </span>
+        </div>
+      )}
+
+      {aberto && saved && (
+        <div className="nh-view-detalhe">
+          {schema.allowed.includes("FKHOSPITAL") && !schema.fkhospitalLivre && (
+            <div className="nh-step-fields-note">
+              <strong>FKHOSPITAL = {Validator.FKHOSPITAL_FIXO}</strong>, sempre.{" "}
+              <button type="button" className="nh-linkish" onClick={onExplainHospital}>
+                por que?
+              </button>
+            </div>
+          )}
+          <StepResult result={saved} onFixRef={onFixRef} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Zona de lote: o cliente solta os arquivos todos de uma vez
+// ---------------------------------------------------------------------------
+//
+// Pesquisa de upload (PatternFly, SaaSUI) converge em tres coisas que valem
+// aqui:
+//
+// 1. **Uma zona para o lote**, nao uma por arquivo. Quem tem os 14 exports
+//    numa pasta nao quer acertar 14 alvos — solta tudo e o sistema resolve.
+//    As zonas por view continuam, para quem tem um arquivo so ou esta
+//    refazendo um.
+// 2. **Estado por arquivo, nunca um veredito do lote.** "Falhou" numa barra so,
+//    escondendo quais entraram e quais nao, e o modo classico de falhar.
+// 3. **Nada sumir em silencio.** Arquivo que o validador nao reconhece aparece
+//    na lista pedindo para o cliente dizer de qual view e.
+function LoteDrop({
+  ocupado,
+  vazio,
+  progresso,
+  resultados,
+  onLote,
+  onEscolher,
+  onLimpar,
+  onExplicarRecorte,
+  onIrParaView,
+  onRemover,
+}) {
+  const reconhecidos = resultados.filter((item) => item.key);
+
+  const seletor = (
+    <Upload
+      multiple
+      accept=".csv,.json"
+      showUploadList={false}
+      disabled={ocupado}
+      beforeUpload={(arquivo, lista) => {
+        if (arquivo === lista[0]) onLote(lista);
+        return false;
+      }}
+    >
+      <Button type={vazio ? "primary" : "default"} size={vazio ? "large" : "middle"} disabled={ocupado}>
+        Selecionar os arquivos
+      </Button>
+    </Upload>
+  );
+
+  return (
+    <section className="nh-lote">
+      {/* Sem nada enviado, o caminho de mandar tudo junto e o principal e fala
+          alto. Depois da primeira leva ele encolhe para uma barra: a acao ja
+          aconteceu e quem manda na tela passa a ser o estado das views. */}
+      {vazio && !ocupado ? (
+        <div className="nh-lote-convite">
+          <span className="nh-lote-icone">
+            <CloudUploadOutlined />
+          </span>
+          <h3>Já tem as views prontas no banco? Mande todas de uma vez.</h3>
+          <p>
+            Exporte as {FILE_TYPES.length} views e solte os arquivos aqui — ou em qualquer lugar desta tela.
+            Não precisa mandar uma a uma nem dizer qual é qual: o validador reconhece cada arquivo pelas
+            colunas e valida na hora. CSV ou JSON.
+          </p>
+          {seletor}
+          <button type="button" className="nh-linkish" onClick={onExplicarRecorte}>
+            Quanto dado exportar de cada view?
+          </button>
+        </div>
+      ) : (
+        <div className={`nh-lote-barra${ocupado ? " ocupado" : ""}`}>
+          <span className="nh-lote-icone">{ocupado ? <LoadingOutlined /> : <CloudUploadOutlined />}</span>
+          <span className="nh-lote-texto">
+            {ocupado ? (
+              <strong>
+                Validando {progresso.feito} de {progresso.total}...
+              </strong>
+            ) : (
+              <>
+                <strong>Mande mais arquivos: solte em qualquer lugar desta tela.</strong>
+                <i>
+                  Pode ser tudo de uma vez — o validador reconhece cada um pelas colunas.{" "}
+                  <button type="button" className="nh-linkish" onClick={onExplicarRecorte}>
+                    Quanto dado exportar?
+                  </button>
+                </i>
+              </>
+            )}
+          </span>
+          {seletor}
+        </div>
+      )}
+
+      {ocupado && (
+        <Progress percent={Math.round((progresso.feito / progresso.total) * 100)} showInfo={false} />
+      )}
+
+      {!ocupado && resultados.length > 0 && (
+        <div className="nh-lote-saida">
+          <div className="nh-lote-saida-topo">
+            <strong>
+              {reconhecidos.length} de {resultados.length}{" "}
+              {resultados.length === 1 ? "arquivo reconhecido" : "arquivos reconhecidos"}
+            </strong>
+            <button type="button" className="nh-linkish" onClick={onLimpar}>
+              fechar
+            </button>
+          </div>
+          <ul>
+            {resultados.map((item, index) => (
+              <li
+                key={index}
+                className={`${item.key ? item.status : "sem-dono"}${
+                  item.substituidoPor || item.removido ? " substituido" : ""
+                }`}
+              >
+                <span className="nh-lote-arquivo">{item.nome}</span>
+                {item.removido ? (
+                  <span className="nh-lote-destino sem-acao">
+                    <i>removido</i>
+                  </span>
+                ) : item.substituidoPor ? (
+                  <span className="nh-lote-destino">
+                    <i>
+                      {SHORT_LABEL[item.key]} ficou com <b>{item.substituidoPor}</b>
+                    </i>
+                  </span>
+                ) : item.key ? (
+                  <span className="nh-lote-acoes">
+                    {/* Clicar aqui abre o grupo, abre o detalhe da view e
+                        rola ate ela: o cliente ve "1 problema" e quer o
+                        problema, nao a informacao de que ele existe. */}
+                    <button
+                      type="button"
+                      className="nh-lote-destino"
+                      onClick={() => onIrParaView(item.key)}
+                      title={item.status === "error" ? "Ver o problema" : "Ver a view"}
+                    >
+                      {statusIcon(item.status)} {SHORT_LABEL[item.key]}
+                      <i>
+                        {item.status === "error"
+                          ? `${item.issueCount} ${item.issueCount === 1 ? "problema" : "problemas"}`
+                          : `${item.recordCount} ${item.recordCount === 1 ? "registro" : "registros"}`}
+                      </i>
+                    </button>
+                    {item.file && (
+                      <button
+                        type="button"
+                        className="nh-lote-remover"
+                        title={`Baixar ${item.nome} como foi enviado`}
+                        onClick={() => baixarArquivo(item.file)}
+                      >
+                        <DownloadOutlined />
+                      </button>
+                    )}
+                    <Popconfirm
+                      title={`Remover o arquivo de ${SHORT_LABEL[item.key]}?`}
+                      okText="Remover"
+                      cancelText="Cancelar"
+                      onConfirm={() => onRemover(item.key)}
+                    >
+                      <button type="button" className="nh-lote-remover" title="Remover este arquivo">
+                        <CloseOutlined />
+                      </button>
+                    </Popconfirm>
+                  </span>
+                ) : (
+                  <span className="nh-lote-escolha">
+                    <em>não reconheci — de qual view e?</em>
+                    <select defaultValue="" onChange={(evento) => onEscolher(index, evento.target.value)}>
+                      <option value="" disabled>
+                        escolher a view
+                      </option>
+                      {FILE_TYPES.map((file) => (
+                        <option key={file.key} value={file.key}>
+                          {SHORT_LABEL[file.key]}
+                        </option>
+                      ))}
+                    </select>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BaseScreen({
+  progress,
+  busy,
+  aberto,
+  desvio,
+  lote,
+  onLote,
+  onEscolherDoLote,
+  onLimparLote,
+  onUpload,
+  onToggle,
+  onContinue,
+  onShowFields,
+  onExplainHospital,
+  onExplicarRecorte,
+  onIrPrescricao,
+  onRemover,
+  arquivos,
+  resultados,
+  onExport,
+  onClear,
+  onExportProgress,
+  onImportProgress,
+}) {
+  // A barra de upload e pequena de proposito (a acao acontece uma vez), entao
+  // quem recebe o arrasto e a **tela inteira**: o cliente nao precisa mirar.
+  // O contador existe porque dragenter/dragleave disparam tambem nos filhos.
+  const [arrastando, setArrastando] = useEstado(false);
+  const profundidade = useRefer(0);
+
+  const temArquivos = (evento) =>
+    Array.from((evento.dataTransfer && evento.dataTransfer.types) || []).includes("Files");
+
+  const aoEntrar = (evento) => {
+    if (!temArquivos(evento)) return;
+    profundidade.current += 1;
+    setArrastando(true);
+  };
+
+  const aoSair = () => {
+    profundidade.current = Math.max(0, profundidade.current - 1);
+    if (profundidade.current === 0) setArrastando(false);
+  };
+
+  const aoSoltar = (evento) => {
+    if (!temArquivos(evento)) return;
+    evento.preventDefault();
+    profundidade.current = 0;
+    setArrastando(false);
+    onLote(evento.dataTransfer.files);
+  };
+
+  const enviadasTotal = FILE_TYPES.filter((file) => progress.steps[file.key]).length;
+
+  // Grupo com erro fica sempre aberto; os outros o cliente abre se quiser.
+  // Uniao em vez de "ou": assim um erro novo aparece mesmo depois de ele ter
+  // mexido na sanfona.
+  const [abertosManual, setAbertosManual] = useEstado([]);
+  const gruposComErro = GRUPOS_VALIDACAO.filter((grupo) =>
+    viewsDoGrupo(grupo.key).some((key) => progress.steps[key] && progress.steps[key].status === "error")
+  ).map((grupo) => grupo.key);
+
+  const abertos = Array.from(new Set(gruposComErro.concat(abertosManual)));
+
+  // O que a tela mostra = o resultado em memoria (completo, com amostra e
+  // valores) quando existe, senao o gravado (sem valor nenhum, por LGPD).
+  // Depois de recarregar o cliente ve status e mensagens, nao o dado.
+  const detalhe = (fileKey) => resultados[fileKey] || progress.steps[fileKey];
+
+  // O "Corrigir <View>" de um erro de chave estrangeira: guarda o que falta e
+  // leva para a view que tem de incluir aqueles valores.
+  const [correcao, setCorrecao] = useEstado(null);
+  const aoCorrigirRef = (grupo, origem) => {
+    if (!grupo || !grupo.refFile) return;
+    setCorrecao({
+      fileKey: grupo.refFile,
+      refField: grupo.refField || "a chave",
+      valores: grupo.distinctValues || [],
+      origem,
+    });
+    irParaView(grupo.refFile);
+  };
+
+  // Abre o grupo da view, abre o detalhe dela e rola ate la.
+  const irParaView = (fileKey) => {
+    const grupo = GRUPOS_VALIDACAO.find((item) => viewsDoGrupo(item.key).includes(fileKey));
+    if (grupo) {
+      setAbertosManual((atual) => (atual.includes(grupo.key) ? atual : atual.concat(grupo.key)));
+    }
+    onToggle(fileKey);
+    window.setTimeout(() => {
+      const alvo = document.getElementById(`view-${fileKey}`);
+      if (alvo) alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+  };
+  // O veredito e o do Anexo I: essencial ausente reprova, opcional ausente nao.
+  const essenciais = FILE_TYPES.filter(isEssencial).map((file) => file.key);
+  const faltamEssenciais = essenciais.filter((key) => !progress.steps[key]).length;
+  const comErro = FILE_TYPES.filter(
+    (file) => progress.steps[file.key] && progress.steps[file.key].status === "error"
+  );
+  const aprovado = faltamEssenciais === 0 && comErro.length === 0;
+
+  return (
+    <div
+      className={`nh-base${arrastando ? " arrastando" : ""}`}
+      onDragEnter={aoEntrar}
+      onDragOver={(evento) => temArquivos(evento) && evento.preventDefault()}
+      onDragLeave={aoSair}
+      onDrop={aoSoltar}
+    >
+      {arrastando && (
+        <div className="nh-base-alvo">
+          <CloudUploadOutlined /> Solte os arquivos para validar
+        </div>
+      )}
+
+      <header className="nh-base-head">
+        <div>
+          <h2>Validação</h2>
+          <p>As {FILE_TYPES.length} views do Anexo I, nos tres grupos do documento.</p>
+        </div>
+      </header>
+
+      <LoteDrop
+        ocupado={lote.ocupado}
+        vazio={enviadasTotal === 0}
+        progresso={lote.progresso}
+        resultados={lote.resultados}
+        onLote={onLote}
+        onEscolher={onEscolherDoLote}
+        onLimpar={onLimparLote}
+        onExplicarRecorte={onExplicarRecorte}
+        onIrParaView={irParaView}
+        onRemover={onRemover}
+      />
+
+      {/* Sanfona na mao, sem o `Collapse` do AntD. O controlado trava: o
+          rc-motion reinicia a animacao a cada render do `BaseScreen` (que
+          re-renderiza no arrasto) e o painel fica aberto com 1px de altura.
+          Aqui nao ha animacao e nao ha o que travar.
+
+          Os grupos vem fechados: o que o cliente tem para fazer e mandar os
+          arquivos, e 14 linhas abertas competiam com isso. Grupo com erro abre
+          sozinho e nao fecha — e justamente o que ele precisa ver. */}
+      <div className="nh-grupos">
+        {GRUPOS_VALIDACAO.map((grupo) => {
+          const views = viewsDoGrupo(grupo.key).map((key) => FILE_TYPES.find((file) => file.key === key));
+          const essenciaisDoGrupo = views.filter(isEssencial);
+          const enviadas = essenciaisDoGrupo.filter((file) => progress.steps[file.key]).length;
+          const opcionaisDoGrupo = views.filter((file) => !isEssencial(file));
+          const opcionaisFeitas = opcionaisDoGrupo.filter((file) => progress.steps[file.key]).length;
+          const erros = views.filter(
+            (file) => progress.steps[file.key] && progress.steps[file.key].status === "error"
+          ).length;
+          const aberto_ = abertos.includes(grupo.key);
+
+          return (
+            <section key={grupo.key} className={`nh-grupo${aberto_ ? " aberto" : ""}`}>
+              <button
+                type="button"
+                className="nh-grupo-head"
+                aria-expanded={aberto_}
+                onClick={() =>
+                  setAbertosManual((atual) =>
+                    atual.includes(grupo.key)
+                      ? atual.filter((chave) => chave !== grupo.key)
+                      : atual.concat(grupo.key)
+                  )
+                }
+              >
+                <RightOutlined className="nh-grupo-seta" />
+                <span className="nh-grupo-nome">{grupo.titulo}</span>
+                <span className="nh-grupo-conta">
+                  {erros > 0 && <em>{erros} com problema</em>}
+                  <span className="nh-base-contador">
+                    {enviadas} de {essenciaisDoGrupo.length} essenciais
+                    {opcionaisDoGrupo.length > 0 && (
+                      <i>
+                        {" · "}
+                        {opcionaisFeitas} de {opcionaisDoGrupo.length} opcionais
+                      </i>
+                    )}
+                  </span>
+                </span>
+              </button>
+
+              {aberto_ && (
+                <ul className="nh-view-lista">
+                  {views.map((file) => (
+                    <BaseRow
+                      key={file.key}
+                      file={file}
+                      saved={detalhe(file.key)}
+                      busy={busy === file.key}
+                      aberto={aberto === file.key}
+                      naPrescricao={VIEWS_NA_PRESCRICAO.includes(file.key)}
+                      onUpload={onUpload}
+                      onToggle={() => onToggle(aberto === file.key ? null : file.key)}
+                      onShowFields={onShowFields}
+                      onExplainHospital={onExplainHospital}
+                      onRemover={() => onRemover(file.key)}
+                      arquivo={arquivos[file.key]}
+                      onFixRef={(grupo) => aoCorrigirRef(grupo, file.key)}
+                      correcao={correcao && correcao.fileKey === file.key ? correcao : null}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })}
+      </div>
+
+      {/* O veredito mora aqui, no fim da lista que ele resume. Antes era uma
+          tela de Resultado que repetia as 14 views com o mesmo status — a
+          mesma informacao em dois lugares. */}
+      <footer className={`nh-veredito ${aprovado ? "ok" : "pendente"}`}>
+        <span className="nh-veredito-icone">{aprovado ? <CheckCircleFilled /> : <CloseCircleFilled />}</span>
+        <span className="nh-veredito-texto">
+          <strong>{aprovado ? "Dados aprovados" : "Ainda falta coisa"}</strong>
+          <i>
+            {aprovado
+              ? "Exporte o relatório e envie para a NoHarm. Ele leva o status e os erros de cada view, sem nenhum dado de paciente."
+              : faltamEssenciais > 0
+                ? `${faltamEssenciais} ${faltamEssenciais === 1 ? "view essencial" : "views essenciais"} sem enviar` +
+                  (comErro.length ? ` · ${comErro.length} com problema` : "")
+                : `${comErro.length} ${comErro.length === 1 ? "view precisa" : "views precisam"} de correção`}
+          </i>
+        </span>
+        <Space size={8}>
+          {desvio && (
+            <Button icon={<ArrowLeftOutlined />} onClick={onContinue}>
+              Voltar para {SHORT_LABEL[desvio.voltarPara]}
+            </Button>
+          )}
+          <Button
+            type="primary"
+            size="large"
+            icon={<DownloadOutlined />}
+            disabled={!aprovado}
+            onClick={onExport}
+          >
+            Exportar relatório
+          </Button>
+        </Space>
+      </footer>
+
+      {/* O progresso guardado: mesma informacao que ficava no rodape do
+          Resultado. */}
+      <div className="nh-review-rodape">
+        <span>
+          Salvo neste navegador: o resultado de cada view e as chaves usadas para cruzar as referências
+          (ex.: números de atendimento). <strong>O conteúdo dos arquivos não é guardado</strong> — nem nome,
+          nem data de nascimento, nem diagnóstico.
+        </span>
+        <Space size={4} wrap>
+          <Button type="text" size="small" onClick={onExportProgress}>
+            exportar progresso
+          </Button>
+          <Upload accept=".json" showUploadList={false} beforeUpload={onImportProgress}>
+            <Button type="text" size="small">
+              reimportar
+            </Button>
+          </Upload>
+          <Popconfirm title="Apagar tudo e recomeçar?" okText="Apagar" cancelText="Cancelar" onConfirm={onClear}>
+            <Button type="text" size="small" danger>
+              apagar tudo
+            </Button>
+          </Popconfirm>
+        </Space>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Pergunta: quais dados opcionais o cliente tem
 // ---------------------------------------------------------------------------
 
 function AskStep({ groupKey, options, chosen, onToggle, onContinue, onBack }) {
   const pergunta =
-    groupKey === "prescricoes" ? "Voce tem conciliacao medicamentosa?" : "Quais desses dados voce tem?";
+    groupKey === "prescricoes" ? "Você tem conciliação medicamentosa?" : "Quais desses dados você tem?";
 
   return (
     <div className="nh-ask">
       <h2>{pergunta}</h2>
-      <p className="nh-ask-sub">Marque o que o hospital consegue extrair. Da para mudar depois.</p>
+      <p className="nh-ask-sub">Marque o que o hospital consegue extrair. Dá para mudar depois.</p>
 
       <div className="nh-ask-options">
         {options.map((fileKey) => {
@@ -487,9 +1166,14 @@ function AskStep({ groupKey, options, chosen, onToggle, onContinue, onBack }) {
         <Button type="text" icon={<ArrowLeftOutlined />} onClick={onBack}>
           Voltar
         </Button>
-        <Button type="primary" size="large" icon={<ArrowRightOutlined />} onClick={onContinue}>
-          {chosen.length === 0 ? "Nao tenho nenhum" : "Continuar"}
-        </Button>
+        <Space size={8}>
+          {chosen.length === 0 && (
+            <span className="nh-ask-nota">Não marcou nenhum? Segue sem eles.</span>
+          )}
+          <Button type="primary" size="large" icon={<ArrowRightOutlined />} onClick={onContinue}>
+            Continuar
+          </Button>
+        </Space>
       </footer>
     </div>
   );
@@ -525,7 +1209,7 @@ function DetourBanner({ desvio }) {
           </div>
         </div>
       ) : (
-        <div className="nh-detour-body">Envie o arquivo certo e voce volta para la.</div>
+        <div className="nh-detour-body">Envie o arquivo certo e você volta para lá.</div>
       )}
     </div>
   );
@@ -556,7 +1240,9 @@ function StepPanel({
   const essencial = isEssencial(step);
   const shown = stepResult || (savedStep && !savedStep.skipped ? savedStep : null);
   const hasError = shown && shown.status === "error";
-  const canContinue = !!shown && !hasError;
+  // Erro nao trava: o portao fica no fim. O cliente percorre tudo, descobre
+  // todos os problemas numa passada e leva uma lista so para quem mexe na view.
+  const canContinue = !!shown;
   const jaValidado = !stepResult && savedStep && !savedStep.skipped;
   const schema = fileSchemaOf(step.key);
   // A view de Hospitais traz os codigos reais, entao o aviso do 1 nao vale la.
@@ -623,7 +1309,9 @@ function StepPanel({
           <div className="nh-result is-ok">
             <CheckCircleFilled />
             <div>
-              <strong>{savedStep.recordCount} registros validados</strong>
+              <strong>
+                {savedStep.recordCount} {savedStep.recordCount === 1 ? "registro validado" : "registros validados"}
+              </strong>
               <div className="nh-result-note">
                 {formatDateTime(savedStep.validatedAt)} · <a onClick={onRedo}>refazer</a>
               </div>
@@ -649,7 +1337,7 @@ function StepPanel({
 
       {hasError && (
         <div className="nh-step-blocker">
-          Corrija o arquivo na origem e envie de novo{!essencial ? ', ou marque que nao tem esse dado' : ''}.
+          Dá para seguir e corrigir depois — mas com erro a validação não fecha.
         </div>
       )}
 
@@ -660,7 +1348,7 @@ function StepPanel({
         <Space size={8}>
           {!essencial && !canContinue && (
             <Button type="text" onClick={onSkip}>
-              Nao tenho
+              Não tenho
             </Button>
           )}
           <Button
@@ -686,182 +1374,91 @@ function StepPanel({
 // Resultado final
 // ---------------------------------------------------------------------------
 
-function ReviewScreen({ progress, onBackToSteps, onJump, onExport }) {
-  const rows = FILE_TYPES.map((file) => {
-    const saved = progress.steps[file.key];
-    return { file, status: saved ? saved.status : "pending", saved };
-  });
-
-  const pendentes = rows.filter((row) => isEssencial(row.file) && row.status !== "ok" && row.status !== "warn");
-  const aprovado = pendentes.length === 0;
-  const erros = rows.reduce((sum, row) => sum + ((row.saved && row.saved.issueCount) || 0), 0);
-
-  return (
-    <div className="nh-review">
-      <div className={`nh-review-head ${aprovado ? "is-ok" : "is-error"}`}>
-        {aprovado ? <CheckCircleFilled /> : <CloseCircleFilled />}
-        <h2>{aprovado ? "Dados aprovados" : "Ainda tem pendencia"}</h2>
-        <p>
-          {aprovado
-            ? "Tire um print desta tela e envie para a NoHarm."
-            : `${pendentes.length} view(s) essencial(is) pendente(s), ${erros} erro(s).`}
-        </p>
-        <Space size={8}>
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={onBackToSteps}>
-            Voltar
-          </Button>
-          <Button type="primary" icon={<DownloadOutlined />} onClick={onExport}>
-            Exportar relatorio
-          </Button>
-        </Space>
-      </div>
-
-      <ul className="nh-review-list">
-        {rows.map((row) => {
-          const meta = STATUS_META[row.status] || STATUS_META.pending;
-          return (
-            <li
-              key={row.file.key}
-              className={meta.className}
-              onClick={() => onJump(row.file.key)}
-            >
-              <i>{statusIcon(row.status)}</i>
-              <span className="nh-review-name">{SHORT_LABEL[row.file.key]}</span>
-              <span className="nh-review-meta">
-                {row.saved && row.saved.recordCount != null
-                  ? `${row.saved.recordCount} registros`
-                  : row.status === "skipped"
-                  ? "pulada"
-                  : "pendente"}
-              </span>
-              {row.saved && row.saved.issueCount ? (
-                <span className="nh-review-errors">{row.saved.issueCount} erros</span>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Dados salvos
-// ---------------------------------------------------------------------------
-
-function SavedDataScreen({ progress, onClear, onExport, onImport, onResetStep }) {
-  const salvos = FILE_TYPES.filter((file) => progress.steps[file.key]);
-
-  return (
-    <div className="nh-plain">
-      <h2>Dados salvos</h2>
-      <p className="nh-plain-sub">
-        Fica so no seu navegador. O conteudo dos arquivos nao e guardado.
-      </p>
-
-      {!Storage.available && (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-          message="Este navegador esta bloqueando o armazenamento local — o progresso nao sera salvo."
-        />
-      )}
-
-      <Space wrap style={{ marginBottom: 20 }}>
-        <Button icon={<DownloadOutlined />} onClick={onExport}>
-          Exportar
-        </Button>
-        <Upload accept=".json" showUploadList={false} beforeUpload={onImport}>
-          <Button icon={<CloudUploadOutlined />}>Reimportar</Button>
-        </Upload>
-        <Popconfirm title="Apagar tudo?" okText="Apagar" cancelText="Cancelar" onConfirm={onClear}>
-          <Button danger type="text" icon={<ReloadOutlined />}>
-            Apagar
-          </Button>
-        </Popconfirm>
-      </Space>
-
-      {salvos.length === 0 ? (
-        <Empty description="Nada salvo ainda." />
-      ) : (
-        <ul className="nh-review-list">
-          {salvos.map((file) => {
-            const saved = progress.steps[file.key];
-            const meta = STATUS_META[saved.status] || STATUS_META.pending;
-            return (
-              <li key={file.key} className={meta.className}>
-                <i>{statusIcon(saved.status)}</i>
-                <span className="nh-review-name">{SHORT_LABEL[file.key]}</span>
-                <span className="nh-review-meta">{saved.fileName || "pulada"}</span>
-                <a onClick={() => onResetStep(file.key)}>refazer</a>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Referencia
 // ---------------------------------------------------------------------------
 
-function ReferenceScreen() {
-  return (
-    <div className="nh-plain">
-      <h2>Campos por view</h2>
-      <p className="nh-plain-sub">Conforme o Anexo I do contrato. Coluna fora desta lista e ignorada.</p>
+// As primeiras linhas do modelo, na propria tela: o cliente ve o formato
+// esperado sem precisar baixar o arquivo para descobrir como e um valor.
+function ExampleTable({ fileKey }) {
+  const template = (Validator && Validator.TEMPLATES && Validator.TEMPLATES[fileKey]) || null;
+  if (!template || !template.rows.length) return null;
 
-      {GROUPS.map((group) => (
-        <div key={group.key} className="nh-ref-group">
-          <span className="nh-label">{group.label}</span>
-          <Collapse
-            ghost
-            items={filesOfGroup(group.key).map((file) => ({
-              key: file.key,
-              label: (
-                <span className="nh-ref-item">
-                  {SHORT_LABEL[file.key]}
-                  <span className="nh-ref-count">{fileSchemaOf(file.key).fields.length} campos</span>
-                  {!isEssencial(file) && <span className="nh-badge">opcional</span>}
-                </span>
-              ),
-              children: (
-                <div>
-                  <Space size={8} style={{ marginBottom: 12 }}>
-                    <Button size="small" icon={<DownloadOutlined />} onClick={() => downloadTemplate(file.key, "csv")}>
-                      CSV
-                    </Button>
-                    <Button size="small" icon={<DownloadOutlined />} onClick={() => downloadTemplate(file.key, "json")}>
-                      JSON
-                    </Button>
-                  </Space>
-                  <FieldsTable fileKey={file.key} />
-                </div>
-              ),
-            }))}
-          />
-        </div>
-      ))}
+  const linhas = template.rows.slice(0, 3);
+
+  return (
+    <div className="nh-preview nh-exemplo">
+      <div className="nh-preview-head">
+        <span className="nh-label">Exemplo</span>
+        <span className="nh-preview-meta">
+          {linhas.length} de {template.rows.length} {template.rows.length === 1 ? "linha" : "linhas"} do modelo
+        </span>
+      </div>
+      <div className="nh-preview-scroll">
+        <table>
+          <thead>
+            <tr>
+              {template.fields.map((campo) => (
+                <th key={campo}>{campo}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map((linha, index) => (
+              <tr key={index}>
+                {linha.map((celula, celulaIndex) => (
+                  <td key={celulaIndex}>
+                    {celula === "" ? <span className="nh-preview-empty">vazio</span> : celula}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
-// Por que FKHOSPITAL e 1. E a duvida que o cliente traz quando ve o numero fixo
+
+// Quanto dado exportar. Saiu do corpo da tela e virou modal: e leitura de uma
+// vez so, e ocupava cinco linhas em todo acesso.
+function RecorteModal({ open, onClose }) {
+  return (
+    <Modal open={open} onCancel={onClose} footer={null} width={560} title="Quanto dado exportar?">
+      <div className="nh-explain">
+        <p>
+          <strong>Não precisa ser a view inteira.</strong> O recomendado e um recorte pequeno que feche entre
+          si: um atendimento (ou poucos) e, nas views de Paciente e Prescricao, so as linhas{" "}
+          <em>desse mesmo atendimento</em> — a prescrição, os exames e as evoluções dele.
+        </p>
+        <p>
+          Assim o validador consegue cruzar as chaves entre as views e você ve a tela da NoHarm montada com
+          um caso real, em vez de linhas soltas que não conversam.
+        </p>
+        <p>
+          As views de cadastro (hospitais, setores, unidades, frequências, vias, medicamentos) vao inteiras:
+          são tabelas de domínio, costumam ser pequenas e o resto aponta para elas.
+        </p>
+      </div>
+    </Modal>
+  );
+}
+
+// Por que FKHOSPITAL é 1. E a duvida que o cliente traz quando ve o numero fixo
 // numa view que ele sabe ser do hospital 52 — e a razao pela qual ele mexe nisso
 // e quebra a integracao.
 function HospitalModal({ open, onClose }) {
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={560} title="Por que FKHOSPITAL e sempre 1?">
+    <Modal open={open} onCancel={onClose} footer={null} width={560} title="Por que FKHOSPITAL é sempre 1?">
       <div className="nh-explain">
         <p>
-          <strong>Nao e o codigo do hospital no seu sistema.</strong> E um identificador fixo da plataforma NoHarm.
-          Manter o <code>1</code> e o que garante a integridade dos dados na ingestao.
+          <strong>Não é o código do hospital no seu sistema.</strong> É um identificador fixo da plataforma NoHarm.
+          Manter o <code>1</code> e o que garante a integridade dos dados na ingestão.
         </p>
         <p>
-          <strong>Rede com varios hospitais?</strong> Continua 1. Quais hospitais entram na integracao se decide no{" "}
+          <strong>Rede com vários hospitais?</strong> Continua 1. Quais hospitais entram na integracao se decide no{" "}
           <em>filtro</em> da view, nunca no SELECT:
         </p>
         <pre>
@@ -872,15 +1469,15 @@ FROM   DBAMV.SETOR S
 WHERE  S.CD_MULTI_EMPRESA IN (1, 52, 57)   -- aqui sim`}
         </pre>
         <p>
-          As tabelas de dominio — unidades, frequencias, medicamentos — sao uma so, com <code>DISTINCT</code>. Nao ha
-          frequencia nem medicamento duplicado por hospital, entao o hospital nao faz diferenca ali.
+          As tabelas de domínio — unidades, frequências, medicamentos — são uma só, com <code>DISTINCT</code>. Não há
+          frequência nem medicamento duplicado por hospital, entao o hospital não faz diferença ali.
         </p>
         <p>
-          <strong>Unica excecao:</strong> a view de <em>Hospitais</em>. Ela e o catalogo, entao traz os codigos reais
+          <strong>Única exceção:</strong> a view de <em>Hospitais</em>. Ela e o catálogo, entao traz os códigos reais
           das multi-empresas.
         </p>
         <p className="nh-explain-warn">
-          Trocar o <code>1</code> pelo codigo real do hospital quebra a integracao.
+          Trocar o <code>1</code> pelo código real do hospital quebra a integração.
         </p>
       </div>
     </Modal>
@@ -892,7 +1489,190 @@ function FieldsModal({ fileKey, open, onClose }) {
   if (!fileKey) return null;
   return (
     <Modal open={open} onCancel={onClose} footer={null} width={860} title={SHORT_LABEL[fileKey]}>
+      {/* Os modelos moravam no cartao de cada view, 14 vezes na tela. Aqui eles
+          ficam junto da lista de campos, que e onde o cliente vai quando
+          precisa montar o arquivo. */}
+      <Space size={8} style={{ marginBottom: 14 }}>
+        <Button size="small" icon={<DownloadOutlined />} onClick={() => downloadTemplate(fileKey, "csv")}>
+          modelo CSV
+        </Button>
+        <Button size="small" icon={<DownloadOutlined />} onClick={() => downloadTemplate(fileKey, "json")}>
+          modelo JSON
+        </Button>
+      </Space>
+      {/* O exemplo vinha da tela de Referência, que saiu: era a mesma lista de
+          campos que este modal ja mostra, so que numa tela a parte. */}
+      <ExampleTable fileKey={fileKey} />
       <FieldsTable fileKey={fileKey} />
     </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tela de Inicio: o hub. Diz o que o validador e, o que ja foi conferido
+// (agregado por grupo, nao view a view) e qual e a referencia de dados que a
+// integracao pede.
+// ---------------------------------------------------------------------------
+// Tela de Inicio
+// ---------------------------------------------------------------------------
+//
+// ---------------------------------------------------------------------------
+// Tela de Inicio
+// ---------------------------------------------------------------------------
+//
+// A NN/g e direta sobre isto: instrucao que o usuario precisa digerir ANTES de
+// usar o produto reduz a usabilidade ("Onboarding: skip it when possible").
+// Entao esta tela nao e um tutorial explicando o que ele vai fazer — ela mostra
+// **em que pe ele esta** e da a proxima acao.
+//
+// E **nao ha fila**. Ja teve um `Steps` aqui e era mentira: a tela de
+// Prescricao e opcional, serve para o cliente ver o dado dele montado na
+// NoHarm, e nada na validacao depende dela. Quem quer so validar as views vai
+// direto. Por isso os dois caminhos aparecem lado a lado, com o peso de cada
+// um: validar e a acao principal, ver na NoHarm e o convite.
+//
+// Componentes do AntD, como no resto do app e na propria NoHarm: `Card`,
+// `Progress`, `Alert`.
+
+function HomeScreen({ progress, onIr }) {
+  const feitos = (progress && progress.steps) || {};
+  const chaves = FILE_TYPES.map((file) => file.key);
+  const essenciais = FILE_TYPES.filter(isEssencial).map((file) => file.key);
+
+  const enviadas = chaves.filter((key) => feitos[key]);
+  const comErro = enviadas.filter((key) => feitos[key].status === "error");
+
+  // Quem decide a aprovacao sao as ESSENCIAIS: opcional ausente entra como
+  // `skipped` e fica fora do resultado. Entao o andamento conta essenciais, e
+  // as opcionais aparecem a parte — senao o circulo diria "8 de 14" com tudo
+  // aprovado e o cliente procuraria seis views que nao precisa mandar.
+  const essenciaisFeitas = essenciais.filter((key) => feitos[key]).length;
+  const completou = essenciaisFeitas === essenciais.length;
+  const faltam = essenciais.length - essenciaisFeitas;
+  const opcionais = chaves.length - essenciais.length;
+  const opcionaisFeitas = enviadas.length - essenciaisFeitas;
+  const comecou = enviadas.length > 0;
+  const percentual = Math.round((essenciaisFeitas / essenciais.length) * 100);
+
+  // Os tres grupos do Anexo I, com o que ja entrou em cada um. E a mesma
+  // divisao da tela de Validacao: o cliente olha aqui e sabe onde esta sem
+  // precisar abrir.
+  const porGrupo = GRUPOS_VALIDACAO.map((grupo) => {
+    const views = viewsDoGrupo(grupo.key);
+    const prontas = views.filter((key) => feitos[key]);
+    return {
+      key: grupo.key,
+      titulo: grupo.titulo,
+      total: views.length,
+      feitas: prontas.length,
+      erros: prontas.filter((key) => feitos[key].status === "error").length,
+    };
+  });
+
+  const resumo = !comecou
+    ? `As ${FILE_TYPES.length} views do Anexo I: ${essenciais.length} essenciais e ${opcionais} opcionais. ` +
+      "Envie na ordem que quiser — o validador confere na hora e aponta o que corrigir."
+    : completou
+      ? comErro.length
+        ? `As ${essenciais.length} essenciais chegaram, mas ${comErro.length} ${
+            comErro.length === 1 ? "precisa" : "precisam"
+          } de correção. O relatório lista o que ajustar em cada uma.`
+        : `As ${essenciais.length} essenciais passaram. Dá para exportar o relatório e mandar para a NoHarm.`
+      : `Faltam ${faltam} ${faltam === 1 ? "view essencial" : "views essenciais"}.` +
+        (comErro.length
+          ? ` ${comErro.length} ${comErro.length === 1 ? "ja enviada precisa" : "ja enviadas precisam"} de correção.`
+          : "");
+
+  return (
+    <div className="nh-home">
+      <header className="nh-home-topo">
+        <img src="imgs/logo192.png" alt="NoHarm" className="nh-home-logo" />
+        <div>
+          <Title level={2} className="nh-home-titulo">
+            Validador NoHarm
+          </Title>
+          <Text type="secondary">
+            Confira as views do seu hospital antes da integração e veja como os dados chegam na NoHarm.
+          </Text>
+        </div>
+      </header>
+
+      <Row gutter={[16, 16]} className="nh-home-linha">
+        <Col xs={24} lg={14}>
+          <Card className="nh-home-acao">
+            <h3>Validar as views</h3>
+            <p>{resumo}</p>
+
+            {comecou && (
+              <div className="nh-home-andamento">
+                <Progress
+                  percent={percentual}
+                  showInfo={false}
+                  status={comErro.length ? "exception" : completou ? "success" : "normal"}
+                  strokeColor={comErro.length ? undefined : "#7ebe9a"}
+                />
+                <span>
+                  <b>
+                    <strong>
+                      {essenciaisFeitas} de {essenciais.length}
+                    </strong>{" "}
+                    essenciais
+                  </b>
+                  <i>
+                    {opcionaisFeitas} de {opcionais} opcionais
+                  </i>
+                </span>
+              </div>
+            )}
+
+            <ul className="nh-home-grupos">
+              {porGrupo.map((grupo) => (
+                <li key={grupo.key} className={grupo.erros ? "erro" : grupo.feitas === grupo.total ? "ok" : ""}>
+                  <span className="nh-home-grupo-nome">{grupo.titulo}</span>
+                  <span className="nh-home-grupo-conta">
+                    {grupo.feitas} de {grupo.total}
+                    {grupo.erros ? ` · ${grupo.erros} com problema` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <Button type="primary" size="large" icon={<ArrowRightOutlined />} onClick={() => onIr("validacao")}>
+              {comecou ? "Continuar a validação" : "Abrir a validação"}
+            </Button>
+          </Card>
+        </Col>
+
+        <Col xs={24} lg={10}>
+          <div className="nh-home-lado">
+            <Card className="nh-home-lateral">
+              <h3>Ver o seu dado na NoHarm</h3>
+              <p>
+                Importe a view de Prescrições e Itens e a tela da NoHarm monta com o dado do seu hospital.
+                E opcional: nada da validação depende dela, e o que você enviar lá já conta aqui.
+              </p>
+              <Button onClick={() => onIr("previa")}>Abrir a tela de Prescrição</Button>
+            </Card>
+
+            <Card className="nh-home-lateral">
+              <h3>Quais dados precisamos</h3>
+              <p>
+                As {FILE_TYPES.length} views do <strong>Anexo I do Contrato de Integração</strong>. Na tela de
+                Validação, cada uma abre a lista completa de campos — com tipo, obrigatoriedade e um modelo
+                para baixar.
+              </p>
+              <Button onClick={() => onIr("validacao")}>Ver as views</Button>
+            </Card>
+          </div>
+        </Col>
+      </Row>
+
+      <Alert
+        className="nh-home-rodape"
+        type="info"
+        showIcon
+        message="Tudo roda no seu navegador: nenhum arquivo sai da sua rede. Aceita CSV ou JSON, e o progresso fica salvo nesta máquina — dá para parar e voltar depois."
+      />
+    </div>
   );
 }

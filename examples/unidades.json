@@ -2,11 +2,41 @@
   {
     "FKHOSPITAL": "1",
     "FKUNIDADEMEDIDA": "MG",
-    "NOME": "Miligramas"
+    "NOME": "Miligrama"
   },
   {
     "FKHOSPITAL": "1",
     "FKUNIDADEMEDIDA": "ML",
-    "NOME": "Mililitros"
+    "NOME": "Mililitro"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKUNIDADEMEDIDA": "AMP",
+    "NOME": "Ampola"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKUNIDADEMEDIDA": "FA",
+    "NOME": "Frasco-ampola"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKUNIDADEMEDIDA": "SER",
+    "NOME": "Seringa"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKUNIDADEMEDIDA": "CP",
+    "NOME": "Comprimido"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKUNIDADEMEDIDA": "UI",
+    "NOME": "Unidade internacional"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKUNIDADEMEDIDA": "UND",
+    "NOME": "Unidade"
   }
 ]

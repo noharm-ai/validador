@@ -11,12 +11,12 @@ const load = (name) => fs.readFileSync(path.join(BASE, name), "utf8");
 const camposExtras = async () => {
   const csv =
     "FKHOSPITAL,FKSETOR,NOME,CD_SETOR_LEGADO,OBSERVACAO_TI\n" +
-    "1,10,CLINICA MEDICA,X-10,migrado em 2024\n" +
+    "1,10,CLÍNICA MÉDICA,X-10,migrado em 2024\n" +
     "1,20,UTI ADULTO,X-20,migrado em 2024\n";
   const parsed = await validator.parseFileText("setores.csv", csv);
   const result = validator.validateFile("setores", parsed, {});
 
-  assert.strictEqual(result.status, "ok", `Campos extras nao deveriam reprovar. Erros: ${result.issues.join(" | ")}`);
+  assert.strictEqual(result.status, "ok", `Campos extras não deveriam reprovar. Erros: ${result.issues.join(" | ")}`);
   assert.deepStrictEqual(result.extraFields, ["CD_SETOR_LEGADO", "OBSERVACAO_TI"]);
 
   // Mas campo obrigatorio ausente continua sendo erro.
@@ -25,32 +25,32 @@ const camposExtras = async () => {
   assert.strictEqual(semNomeResult.status, "error");
   assert.ok(
     semNomeResult.issueGroups.some((group) => group.message.includes("Campos faltando: NOME")),
-    "Campo obrigatorio ausente deveria reprovar."
+    "Campo obrigatório ausente deveria reprovar."
   );
 
   console.log("Campos extras ignorados: OK");
 };
 
-// FKHOSPITAL e constante da plataforma, nao o codigo do hospital no sistema do
+// FKHOSPITAL é constante da plataforma, nao o codigo do hospital no sistema do
 // cliente. Rede com varios hospitais se resolve no filtro da view, nunca no
 // SELECT, entao o valor e sempre 1 em todas as views.
 const fkhospitalFixo = async () => {
-  const certo = await validator.parseFileText("setores.csv", "FKHOSPITAL,FKSETOR,NOME\n1,10,CLINICA MEDICA\n");
+  const certo = await validator.parseFileText("setores.csv", "FKHOSPITAL,FKSETOR,NOME\n1,10,CLÍNICA MÉDICA\n");
   assert.strictEqual(validator.validateFile("setores", certo, {}).status, "ok");
 
   const errado = await validator.parseFileText(
     "setores.csv",
-    "FKHOSPITAL,FKSETOR,NOME\n52,10,CLINICA MEDICA\n52,20,UTI ADULTO\n"
+    "FKHOSPITAL,FKSETOR,NOME\n52,10,CLÍNICA MÉDICA\n52,20,UTI ADULTO\n"
   );
   const resultado = validator.validateFile("setores", errado, {});
-  assert.strictEqual(resultado.status, "error", "Codigo real do hospital no lugar do 1 tem que reprovar.");
+  assert.strictEqual(resultado.status, "error", "Código real do hospital no lugar do 1 tem que reprovar.");
   assert.ok(
     resultado.issueGroups.some((group) => group.message.includes("FKHOSPITAL deve ser 1")),
     "Deveria apontar o valor fixo."
   );
   assert.ok(
     resultado.hints.some((hint) => hint.key === "fkhospital"),
-    "Deveria explicar que o 1 e da plataforma, nao um erro da view."
+    "Deveria explicar que o 1 e da plataforma, não um erro da view."
   );
 
   // A view de Hospitais e a excecao: e o catalogo, traz os codigos reais das
@@ -62,13 +62,13 @@ const fkhospitalFixo = async () => {
   assert.strictEqual(
     validator.validateFile("hospitais", hospitais, {}).status,
     "ok",
-    "A view de Hospitais nao segue o valor fixo."
+    "A view de Hospitais não segue o valor fixo."
   );
 
   // Rede com varios hospitais: os setores de todos entram, todos com FKHOSPITAL 1.
   const rede = await validator.parseFileText(
     "setores.csv",
-    "FKHOSPITAL,FKSETOR,NOME\n1,10,CLINICA - UNIDADE CENTRO\n1,20,UTI - UNIDADE SUL\n1,30,PEDIATRIA - UNIDADE NORTE\n"
+    "FKHOSPITAL,FKSETOR,NOME\n1,10,CLÍNICA - UNIDADE CENTRO\n1,20,UTI - UNIDADE SUL\n1,30,PEDIATRIA - UNIDADE NORTE\n"
   );
   assert.strictEqual(validator.validateFile("setores", rede, {}).status, "ok", "Rede consolidada em 1 tem que passar.");
 
@@ -80,30 +80,35 @@ const fkhospitalFixo = async () => {
 const indicePersistido = async () => {
   const prescricoes = await validator.parseFileText("prescricoes.csv", load("prescricoes.csv"));
 
-  const comIndice = validator.validateFile("prescricoes", prescricoes, {
-    externalIndexes: {
-      setores: ["10", "20"],
-      medicamentos: ["2001", "2002"],
-      unidades: ["MG", "ML"],
-      frequencia: ["8/8", "12/12"],
-    },
-  });
-  assert.strictEqual(comIndice.status, "ok", `Deveria fechar com os indices. Erros: ${comIndice.issues.join(" | ")}`);
+  // Os indices saem das proprias views do lote — assim o teste nao quebra toda
+  // vez que os modelos ganham uma linha nova.
+  const indiceDe = async (fileKey) =>
+    validator.buildKeyIndex(fileKey, await validator.parseFileText(`${fileKey}.csv`, load(`${fileKey}.csv`)));
+
+  const indices = {
+    setores: await indiceDe("setores"),
+    medicamentos: await indiceDe("medicamentos"),
+    unidades: await indiceDe("unidades"),
+    frequencia: await indiceDe("frequencia"),
+  };
+
+  const comIndice = validator.validateFile("prescricoes", prescricoes, { externalIndexes: indices });
+  assert.strictEqual(comIndice.status, "ok", `Deveria fechar com os índices. Erros: ${comIndice.issues.join(" | ")}`);
 
   const indiceFurado = validator.validateFile("prescricoes", prescricoes, {
-    externalIndexes: { setores: ["99"], medicamentos: ["2001", "2002"], unidades: ["MG", "ML"], frequencia: ["8/8", "12/12"] },
+    externalIndexes: Object.assign({}, indices, { setores: ["99"] }),
   });
-  assert.strictEqual(indiceFurado.status, "error", "FK que nao existe no indice deveria reprovar.");
-  assert.ok(indiceFurado.issueGroups.some((group) => group.message.includes("FKSETOR nao existe em setores")));
+  assert.strictEqual(indiceFurado.status, "error", "FK que não existe no índice deveria reprovar.");
+  assert.ok(indiceFurado.issueGroups.some((group) => group.message.includes("FKSETOR não existe em setores")));
 
   // O indice serve para o passo seguinte: e gerado a partir da view validada.
   const setores = await validator.parseFileText("setores.csv", load("setores.csv"));
-  assert.deepStrictEqual(validator.buildKeyIndex("setores", setores), ["10", "20"]);
+  assert.deepStrictEqual(validator.buildKeyIndex("setores", setores), ["10", "20", "30", "40"]);
   // View sem chave definida no Anexo I nao gera indice.
   const cultura = await validator.parseFileText("cultura.csv", load("cultura.csv"));
   assert.deepStrictEqual(validator.buildKeyIndex("cultura", cultura), []);
 
-  console.log("Indice persistido entre passos: OK");
+  console.log("Índice persistido entre passos: OK");
 };
 
 // A amostra mostra so as colunas do padrao que existem no arquivo, na ordem do
@@ -111,17 +116,17 @@ const indicePersistido = async () => {
 const amostra = async () => {
   const csv =
     "FKHOSPITAL,FKSETOR,NOME,CD_LEGADO,OBS\n" +
-    "1,10,CLINICA MEDICA,X-10,abc\n" +
+    "1,10,CLÍNICA MÉDICA,X-10,abc\n" +
     "1,20,UTI ADULTO,X-20,def\n" +
     "1,30,PEDIATRIA,,ghi\n";
   const parsed = await validator.parseFileText("setores.csv", csv);
   const preview = validator.buildPreview("setores", parsed);
 
-  assert.deepStrictEqual(preview.columns, ["FKHOSPITAL", "FKSETOR", "NOME"], "So as colunas do padrao.");
+  assert.deepStrictEqual(preview.columns, ["FKHOSPITAL", "FKSETOR", "NOME"], "Só as colunas do padrão.");
   assert.strictEqual(preview.usedColumns, 3);
   assert.strictEqual(preview.totalColumns, 5);
   assert.strictEqual(preview.rows.length, 3);
-  assert.deepStrictEqual(preview.rows[0], ["1", "10", "CLINICA MEDICA"]);
+  assert.deepStrictEqual(preview.rows[0], ["1", "10", "CLÍNICA MÉDICA"]);
 
   // No maximo 5 linhas, mesmo com arquivo grande.
   const muitas = ["FKHOSPITAL,FKSETOR,NOME"];
@@ -176,7 +181,7 @@ const viasJson = async () => {
   const quebrado = await validator.parseFileText("vias.csv", linha('[{"id": "VO", "value": "ORAL" '));
   const resultadoQuebrado = validator.validateFile("vias", quebrado, {});
   assert.strictEqual(resultadoQuebrado.status, "error");
-  assert.ok(resultadoQuebrado.issueGroups.some((group) => group.message.includes("nao e um JSON valido")));
+  assert.ok(resultadoQuebrado.issueGroups.some((group) => group.message.includes("não é um JSON válido")));
   assert.ok(resultadoQuebrado.hints.some((hint) => hint.key === "jsonList"));
 
   const semValue = await validator.parseFileText("vias.csv", linha(JSON.stringify([{ id: "VO" }])));
@@ -185,7 +190,7 @@ const viasJson = async () => {
   assert.ok(resultadoSemValue.issueGroups.some((group) => group.message.includes("item sem value")));
 
   const vazio = await validator.parseFileText("vias.csv", linha("[]"));
-  assert.strictEqual(validator.validateFile("vias", vazio, {}).status, "error", "Array vazio nao serve.");
+  assert.strictEqual(validator.validateFile("vias", vazio, {}).status, "error", "Array vazio não serve.");
 
   // So TIPO e VALOR sao obrigatorios: UPDATE_AT e UPDATE_BY entram se vierem.
   const soEssencial = await validator.parseFileText(
@@ -213,7 +218,7 @@ const viasJson = async () => {
   assert.strictEqual(
     validator.validateFile("vias", jaParseado, {}).status,
     "ok",
-    "Array ja parseado nao pode cair na checagem de dado flat."
+    "Array já parseado não pode cair na checagem de dado flat."
   );
 
   console.log("Vias com array JSON: OK");
@@ -234,9 +239,9 @@ const amostrasDistintas = async () => {
     .validateFile("pessoa", parsed, { externalIndexes: { setores: ["10"] } })
     .issueGroups.find((item) => item.message.includes("FKSETOR"));
 
-  assert.strictEqual(grupo.count, 10, "A contagem de ocorrencias continua real.");
-  assert.strictEqual(grupo.distinctCount, 4, "Sao 4 setores diferentes faltando.");
-  assert.strictEqual(grupo.samples.length, 4, "Uma amostra por valor distinto, nao por linha.");
+  assert.strictEqual(grupo.count, 10, "A contagem de ocorrências continua real.");
+  assert.strictEqual(grupo.distinctCount, 4, "São 4 setores diferentes faltando.");
+  assert.strictEqual(grupo.samples.length, 4, "Uma amostra por valor distinto, não por linha.");
   assert.ok(grupo.samples.every((sample) => sample.includes("valor")));
   ["809", "812", "977", "1004"].forEach((setor) => {
     assert.ok(
@@ -256,6 +261,35 @@ const amostrasDistintas = async () => {
   console.log("Amostras por valor distinto: OK");
 };
 
+// O cliente solta os 14 arquivos de uma vez e o validador descobre quem e
+// quem pelo CABECALHO — o nome do arquivo e so desempate, porque o export sai
+// como "VW_NOHARM_01.csv".
+const reconhecimento = async () => {
+  for (const file of validator.FILE_TYPES) {
+    for (const ext of ["csv", "json"]) {
+      const parsed = await validator.parseFileText(`anonimo.${ext}`, load(`${file.key}.${ext}`));
+      const palpite = validator.guessFileKey(`anonimo.${ext}`, parsed.normalizedFields);
+      assert.ok(palpite, `Não reconheceu ${file.key}.${ext} pelo cabeçalho.`);
+      assert.strictEqual(palpite.key, file.key, `${file.key}.${ext} foi confundida com ${palpite && palpite.key}.`);
+    }
+  }
+
+  // Coluna propria do cliente nao atrapalha o reconhecimento.
+  const comExtras = load("setores.csv")
+    .split("\n")
+    .map((linha, i) => (linha ? (i === 0 ? `${linha},CD_LEGADO,OBS` : `${linha},X,y`) : linha))
+    .join("\n");
+  const parsedExtras = await validator.parseFileText("VW_NOHARM_01.csv", comExtras);
+  assert.strictEqual(validator.guessFileKey("VW_NOHARM_01.csv", parsedExtras.normalizedFields).key, "setores");
+
+  // Arquivo que nao e de view nenhuma volta sem palpite: a tela pergunta, em
+  // vez de gravar no lugar errado.
+  const estranho = await validator.parseFileText("lixo.csv", "A,B,C\n1,2,3\n");
+  assert.strictEqual(validator.guessFileKey("lixo.csv", estranho.normalizedFields), null);
+
+  console.log("Reconhecimento do arquivo pelo cabeçalho: OK");
+};
+
 (async () => {
   await camposExtras();
   await amostrasDistintas();
@@ -263,5 +297,6 @@ const amostrasDistintas = async () => {
   await amostra();
   await fkhospitalFixo();
   await indicePersistido();
+  await reconhecimento();
   console.log("All rule checks passed.");
 })();

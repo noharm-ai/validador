@@ -1,2 +1,2 @@
 TIPO,VALOR,UPDATE_AT,UPDATE_BY
-map-routes,"[{""id"":""VO"",""value"":""Via Oral""},{""id"":""IV"",""value"":""Intravenosa""}]",2026-02-07T03:00:00,0
+map-routes,"[{""id"":""VO"",""value"":""Via oral""},{""id"":""IV"",""value"":""Intravenosa""},{""id"":""IM"",""value"":""Intramuscular""},{""id"":""SC"",""value"":""Subcutânea""},{""id"":""SNE"",""value"":""Sonda nasoenteral""},{""id"":""INAL"",""value"":""Inalatória""}]",2026-02-07T03:00:00,0

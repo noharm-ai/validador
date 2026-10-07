@@ -1,6 +1,11 @@
 [
   {
     "FKHOSPITAL": "1",
+    "FKFREQUENCIA": "6/6",
+    "NOME": "6 em 6 horas"
+  },
+  {
+    "FKHOSPITAL": "1",
     "FKFREQUENCIA": "8/8",
     "NOME": "8 em 8 horas"
   },
@@ -8,5 +13,20 @@
     "FKHOSPITAL": "1",
     "FKFREQUENCIA": "12/12",
     "NOME": "12 em 12 horas"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKFREQUENCIA": "24/24",
+    "NOME": "24 em 24 horas"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKFREQUENCIA": "SN",
+    "NOME": "Se necessário"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKFREQUENCIA": "CONT",
+    "NOME": "Infusao continua"
   }
 ]

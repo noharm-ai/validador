@@ -3,7 +3,7 @@
 
 const { useCallback, useEffect, useMemo, useRef, useState } = React;
 const { Layout, Menu, message, ConfigProvider } = antd;
-const { FileSearchOutlined, DatabaseOutlined, ReadOutlined, HomeOutlined } = icons;
+const { HomeOutlined, MedicineBoxOutlined, AuditOutlined } = icons;
 
 const { Sider, Content } = Layout;
 
@@ -20,7 +20,7 @@ const OPTIONALS_BY_GROUP = GROUPS.reduce((acc, group) => {
 // marcadas viram passo.
 const buildSequence = (progress) => {
   const sequence = [];
-  GROUPS.forEach((group) => {
+  GROUPS.filter((group) => group.key !== "cadastros").forEach((group) => {
     FILE_TYPES.filter((file) => file.group === group.key && file.criticality === "essencial").forEach((file) =>
       sequence.push({ type: "view", key: file.key, group: group.key })
     );
@@ -38,8 +38,8 @@ const buildSequence = (progress) => {
 
 function App() {
   const [progress, setProgress] = useState(() => (Storage ? Storage.load() : null));
-  const [screen, setScreen] = useState("welcome");
-  const [menuKey, setMenuKey] = useState("validacao");
+  const [screen, setScreen] = useState("inicio");
+  const [menuKey, setMenuKey] = useState("inicio");
   const [stepIndex, setStepIndex] = useState(0);
   // Guardados por etapa: sair e voltar nao pode perder o arquivo que o cliente
   // ja enviou naquele passo.
@@ -47,6 +47,11 @@ function App() {
   const [stepResults, setStepResults] = useState({});
   const [askChoice, setAskChoice] = useState([]);
   const [fieldsOpen, setFieldsOpen] = useState(false);
+  // Cartao da Base aberto (a view cujo detalhe esta na tela) e qual esta sendo
+  // validada no momento.
+  const [baseAberto, setBaseAberto] = useState(null);
+  const [baseBusy, setBaseBusy] = useState(null);
+  const [fieldsKey, setFieldsKey] = useState(null);
   // Desvio: o cliente saiu de uma etapa para corrigir uma view anterior. Guarda
   // de onde ele veio e o que exatamente esta faltando, para a etapa de destino
   // poder dizer o que incluir.
@@ -58,16 +63,25 @@ function App() {
   // Indices de chave desta sessao. Views grandes nao cabem no localStorage, mas
   // dentro da sessao servem a validacao cruzada.
   const sessionIndexes = useRef({});
+  // parsed das views que a tela de Prescricao desenha — memoria da sessao, nunca gravado
+  const parsedPrevia = useRef({});
+  // Estado do lote: ocupado, quantos ja foram e o resultado por arquivo.
+  const [lote, setLote] = useState({ ocupado: false, progresso: { feito: 0, total: 0 }, resultados: [] });
+  const [recorteOpen, setRecorteOpen] = useState(false);
+  // Muda quando o progresso e apagado, para remontar a tela de Prescricao.
+  const [versaoDados, setVersaoDados] = useState(0);
 
   const sequence = useMemo(() => (progress ? buildSequence(progress) : []), [progress]);
   const current = sequence[Math.min(stepIndex, sequence.length - 1)];
   const savedStep = progress && current && current.type === "view" ? progress.steps[current.key] : null;
+  // A pergunta nao e uma view: contar telas de pergunta fazia o "N de M" nao
+  // bater com o que o cliente ve.
+  const totalMovimento = sequence.filter((item) => item.type === "view").length;
+  const posicaoMovimento = sequence
+    .slice(0, stepIndex + 1)
+    .filter((item) => item.type === "view").length;
   const stepFile = current ? stepFiles[current.key] || null : null;
   const stepResult = current ? stepResults[current.key] || null : null;
-
-  // Posicao dentro do grupo, para a linha do tempo.
-  const groupSteps = current ? sequence.filter((item) => item.group === current.group) : [];
-  const groupPosition = current ? groupSteps.findIndex((item) => item.key === current.key) + 1 : 0;
 
   const externalIndexes = useCallback(
     () => Object.assign({}, progress ? progress.indexes : {}, sessionIndexes.current),
@@ -96,12 +110,18 @@ function App() {
     if (key) setMenuKey(key);
   };
 
+  const baseCompleta = () => VIEWS_BASE.every((key) => progress.steps[key]);
+
   const handleStart = () => {
     setStepIndex(0);
-    goToScreen("steps", "validacao");
+    goToScreen("base", "validacao");
   };
 
   const handleResume = () => {
+    if (!baseCompleta()) {
+      goToScreen("base", "validacao");
+      return;
+    }
     setStepIndex(firstPendingIndex());
     goToScreen("steps", "validacao");
   };
@@ -116,16 +136,22 @@ function App() {
   };
 
   // Volta para uma etapa ja concluida. Ir para frente, so pelo Continuar.
+  // Usado pelo desvio de chave estrangeira.
   const handleJump = (fileKey) => {
+    if (VIEWS_BASE.includes(fileKey)) {
+      setBaseAberto(fileKey);
+      goToScreen("base", "validacao");
+      return;
+    }
     const index = sequence.findIndex((item) => item.key === fileKey);
     if (index < 0) return;
-    setStepIndex(Math.min(index, firstPendingIndex()));
+    setStepIndex(index);
     goToScreen("steps", "validacao");
   };
 
-  const validarArquivo = async (fileKey, file) => {
+  const validarArquivo = async (fileKey, file, aoTerminar) => {
     if (!Validator) {
-      messageApi.error("Validador nao carregado. Recarregue a pagina.");
+      messageApi.error("Validador não carregado. Recarregue a página.");
       return false;
     }
     setBusy(true);
@@ -143,19 +169,20 @@ function App() {
       const index = Validator.buildKeyIndex(fileKey, parsed);
       if (index.length) sessionIndexes.current[fileKey] = index;
       const preview = Validator.buildPreview(fileKey, parsed);
+      if (VIEWS_DA_PRESCRICAO.includes(fileKey)) {
+        parsedPrevia.current[fileKey] = { nome: file.name, tamanho: file.size, parsed, registros: parsed.records || [] };
+      }
 
-      setStepResults((prev) =>
-        Object.assign({}, prev, {
-          [fileKey]: Object.assign({}, result, {
-            __index: index,
-            __preview: preview,
-            preview,
-            __fileMeta: { fileName: file.name, fileSize: file.size, format: parsed.format },
-          }),
-        })
-      );
+      const completo = Object.assign({}, result, {
+        __index: index,
+        __preview: preview,
+        preview,
+        __fileMeta: { fileName: file.name, fileSize: file.size, format: parsed.format },
+      });
+      setStepResults((prev) => Object.assign({}, prev, { [fileKey]: completo }));
+      if (aoTerminar) aoTerminar(completo);
     } catch (err) {
-      messageApi.error(`Nao foi possivel ler o arquivo: ${err.message}`);
+      messageApi.error(`Não foi possível ler o arquivo: ${err.message}`);
       setStepFiles((prev) => {
         const next = Object.assign({}, prev);
         delete next[fileKey];
@@ -170,26 +197,291 @@ function App() {
 
   const handleStepUpload = (file) => validarArquivo(current.key, file);
 
+  // Na Base nao ha "Continuar" por view: o upload ja valida e grava, e o cartao
+  // passa a mostrar o resultado.
+  // A tela de Prescricao ja leu e parseou o arquivo. Aqui so validamos e
+  // gravamos, para a view contar no Resultado como qualquer outra.
+  //
+  // `parsedPrevia` segura em memoria (nunca no localStorage) o parsed das
+  // views que a tela de Prescricao desenha (`VIEWS_DA_PRESCRICAO`), venham
+  // dela ou da Validacao. E o que faz a tela montar sozinha quando o cliente
+  // chega nela com os arquivos ja enviados — inclusive com os nomes dos
+  // medicamentos no lugar dos codigos. Morre no reload, junto com o conteudo.
+  const registrarDaPrescricao = (fileKey, arquivo) => {
+    if (!Validator || !Storage || !arquivo || !arquivo.parsed) return;
+    try {
+      const parsed = arquivo.parsed;
+      const result = Validator.validateFile(fileKey, parsed, { externalIndexes: externalIndexes() });
+      const index = Validator.buildKeyIndex(fileKey, parsed);
+      if (index.length) sessionIndexes.current[fileKey] = index;
+      const preview = Validator.buildPreview(fileKey, parsed);
+      const meta = {
+        fileName: arquivo.nome,
+        fileSize: arquivo.tamanho || 0,
+        format: parsed.format,
+        origem: "previa",
+      };
+      parsedPrevia.current[fileKey] = arquivo;
+      const completo = Object.assign({}, result, {
+        __index: index,
+        __preview: preview,
+        preview,
+        __fileMeta: meta,
+      });
+      setStepResults((prev) => Object.assign({}, prev, { [fileKey]: completo }));
+      setProgress((atual) => Storage.saveStep(atual, fileKey, completo, meta, index, preview));
+    } catch (err) {
+      messageApi.error(`Não foi possível validar ${SHORT_LABEL[fileKey] || fileKey}: ${err.message}`);
+    }
+  };
+
+  // ---------------------------------------------------------------------
+  // Lote: o cliente solta varios arquivos de uma vez
+  // ---------------------------------------------------------------------
+  //
+  // Cada arquivo e lido, reconhecido pelo cabecalho (`Validator.guessFileKey`)
+  // e validado. O estado e **por arquivo**: o que entrou, em qual view, com
+  // quantos registros ou problemas — e o que nao foi reconhecido fica na lista
+  // esperando o cliente dizer de qual view e, em vez de sumir.
+  const validarDoLote = async (fileKey, file, parsedPronto) => {
+    const parsed = parsedPronto || (await Validator.parseFileText(file.name, await file.text()));
+    const result = Validator.validateFile(fileKey, parsed, { externalIndexes: externalIndexes() });
+    const index = Validator.buildKeyIndex(fileKey, parsed);
+    if (index.length) sessionIndexes.current[fileKey] = index;
+    if (VIEWS_DA_PRESCRICAO.includes(fileKey)) {
+      parsedPrevia.current[fileKey] = {
+        nome: file.name,
+        tamanho: file.size,
+        parsed,
+        registros: parsed.records || [],
+      };
+    }
+    const preview = Validator.buildPreview(fileKey, parsed);
+    const meta = { fileName: file.name, fileSize: file.size, format: parsed.format };
+    const completo = Object.assign({}, result, {
+      __index: index,
+      __preview: preview,
+      preview,
+      __fileMeta: meta,
+    });
+    setStepFiles((prev) => Object.assign({}, prev, { [fileKey]: file }));
+    setStepResults((prev) => Object.assign({}, prev, { [fileKey]: completo }));
+    setProgress((atual) => Storage.saveStep(atual, fileKey, completo, meta, index, preview));
+    return completo;
+  };
+
+  // Dois arquivos da mesma view: o ultimo vale, e os anteriores precisam
+  // **dizer** que foram substituidos. Sumir em silencio e a falha classica do
+  // upload em lote — o cliente acha que mandou e nao mandou.
+  const marcarSubstituidos = (itens) => {
+    const ultimo = {};
+    itens.forEach((item, indice) => {
+      if (item.key) ultimo[item.key] = indice;
+    });
+    return itens.map((item, indice) =>
+      item.key && ultimo[item.key] !== indice
+        ? Object.assign({}, item, { substituidoPor: itens[ultimo[item.key]].nome })
+        : item
+    );
+  };
+
+  const handleLote = async (arquivos) => {
+    const lista = Array.from(arquivos || []);
+    if (!lista.length || !Validator || !Storage) return;
+
+    setLote({ ocupado: true, progresso: { feito: 0, total: lista.length }, resultados: [] });
+    const saida = [];
+
+    for (let i = 0; i < lista.length; i += 1) {
+      const file = lista[i];
+      try {
+        const parsed = await Validator.parseFileText(file.name, await file.text());
+        const palpite = Validator.guessFileKey(file.name, parsed.normalizedFields);
+        if (!palpite) {
+          saida.push({ nome: file.name, key: null, file, parsed });
+        } else {
+          const completo = await validarDoLote(palpite.key, file, parsed);
+          saida.push({
+            nome: file.name,
+            key: palpite.key,
+            file,
+            parsed,
+            status: completo.status,
+            recordCount: completo.recordCount,
+            issueCount: completo.issueCount,
+          });
+        }
+      } catch (err) {
+        saida.push({ nome: file.name, key: null, erro: err.message });
+      }
+      setLote((atual) => Object.assign({}, atual, { progresso: { feito: i + 1, total: lista.length } }));
+    }
+
+    // Num lote a ordem e arbitraria: se Prescricoes entrou antes de Setores, a
+    // chave estrangeira dela foi medida sem o indice — e pode ter passado sem
+    // checagem. Uma segunda passada em TODA view que tem referencia, agora com
+    // todos os indices no lugar, corrige nos dois sentidos (falso erro e falso
+    // verde).
+    const temRef = (key) =>
+      Object.keys((Validator.NOHARM_SCHEMA.files[key] || {}).refs || {}).length > 0;
+    for (const item of saida) {
+      if (!item.key || !item.parsed || !temRef(item.key)) continue;
+      const atualizado = await validarDoLote(item.key, item.file || { name: item.nome, size: 0 }, item.parsed);
+      item.status = atualizado.status;
+      item.issueCount = atualizado.issueCount;
+      item.recordCount = atualizado.recordCount;
+    }
+
+    setLote({
+      ocupado: false,
+      progresso: { feito: lista.length, total: lista.length },
+      resultados: marcarSubstituidos(saida),
+    });
+  };
+
+  // O cliente disse de qual view e o arquivo que o validador nao reconheceu.
+  const handleEscolherDoLote = async (indice, fileKey) => {
+    const item = lote.resultados[indice];
+    if (!item || !item.file || !fileKey) return;
+    const completo = await validarDoLote(fileKey, item.file, item.parsed);
+    setLote((atual) => {
+      const resultados = atual.resultados.slice();
+      resultados[indice] = Object.assign({}, item, {
+        key: fileKey,
+        status: completo.status,
+        recordCount: completo.recordCount,
+        issueCount: completo.issueCount,
+      });
+      return Object.assign({}, atual, { resultados: marcarSubstituidos(resultados) });
+    });
+  };
+
+  // Quem referencia `fileKey`, segundo o Anexo I. O critério é o schema, não o
+  // status atual: uma view pode ter PASSADO só porque o índice ainda não
+  // existia (`o motor só cobra a referência de quem recebeu índice`), e essa
+  // também precisa ser reconferida.
+  const quemReferencia = (fileKey) =>
+    FILE_TYPES.map((file) => file.key).filter(
+      (key) =>
+        key !== fileKey &&
+        Object.values((Validator.NOHARM_SCHEMA.files[key] || {}).refs || {}).includes(fileKey)
+    );
+
+  // Chegou um arquivo novo: toda view ja enviada que aponta para ele precisa ser
+  // revalidada. O resultado dela foi conferido contra o indice antigo (ou
+  // contra nenhum) e nao vale mais — sem isso o cliente corrige a view de
+  // Setores e o erro continua vermelho em Prescricoes, ou pior: Prescricoes
+  // segue verde sem nunca ter tido a chave checada.
+  const revalidarDependentes = async (fileKeyNovo, progressoAtual) => {
+    const alvos = quemReferencia(fileKeyNovo).filter(
+      (key) => progressoAtual.steps[key] && stepFiles[key]
+    );
+    for (const key of alvos) {
+      await validarDoLote(key, stepFiles[key]);
+    }
+    return alvos;
+  };
+
+  // Tirar um arquivo ja enviado: errou a view, mandou o arquivo errado, ou
+  // simplesmente nao quer mandar aquela opcional. Antes o unico jeito de
+  // desfazer era apagar o progresso inteiro.
+  const handleRemover = (fileKey) => {
+    setProgress((atual) => Storage.resetStep(atual, fileKey));
+    delete sessionIndexes.current[fileKey];
+    delete parsedPrevia.current[fileKey];
+    setStepFiles((prev) => {
+      const copia = Object.assign({}, prev);
+      delete copia[fileKey];
+      return copia;
+    });
+    setStepResults((prev) => {
+      const copia = Object.assign({}, prev);
+      delete copia[fileKey];
+      return copia;
+    });
+    if (baseAberto === fileKey) setBaseAberto(null);
+    // A lista do lote precisa contar a mesma historia: o arquivo saiu.
+    setLote((atual) =>
+      Object.assign({}, atual, {
+        resultados: atual.resultados.map((item) =>
+          item.key === fileKey ? Object.assign({}, item, { removido: true }) : item
+        ),
+      })
+    );
+  };
+
+  const handleBaseUpload = async (fileKey, file) => {
+    setBaseBusy(fileKey);
+    let proximo = progress;
+    await validarArquivo(fileKey, file, (resultado) => {
+      proximo = Storage.saveStep(
+        progress,
+        fileKey,
+        resultado,
+        resultado.__fileMeta,
+        resultado.__index,
+        resultado.__preview
+      );
+      setProgress(proximo);
+      setBaseAberto(fileKey);
+    });
+    const revalidadas = await revalidarDependentes(fileKey, proximo);
+    if (revalidadas.length) {
+      messageApi.info(
+        `${revalidadas.map((key) => SHORT_LABEL[key]).join(", ")} ${
+          revalidadas.length === 1 ? "foi revalidada" : "foram revalidadas"
+        } com o arquivo novo.`
+      );
+    }
+    setBaseBusy(null);
+    return false;
+  };
+
   // Erro de chave estrangeira aponta para outra view. Em vez de voltar na mao
   // etapa por etapa, o cliente pula direto para ela levando junto a lista do
   // que falta incluir.
   const handleFixRef = (group) => {
-    const index = sequence.findIndex((item) => item.key === group.refFile);
-    if (index < 0) return;
-    setDesvio({
+    const desvioNovo = {
       voltarPara: current.key,
       corrigindo: group.refFile,
       campo: group.refField,
       valores: group.distinctValues || [],
       total: group.distinctCount || 0,
-    });
-    setStepIndex(index);
+    };
+    setDesvio(desvioNovo);
+
+    // Quase sempre a view quebrada e da Base, que agora e uma tela so.
+    if (VIEWS_BASE.includes(group.refFile)) {
+      setBaseAberto(group.refFile);
+      goToScreen("base", "validacao");
+      return;
+    }
+    const index = sequence.findIndex((item) => item.key === group.refFile);
+    if (index >= 0) setStepIndex(index);
+  };
+
+  // Sair da Base durante um desvio volta para a etapa que pediu a correcao.
+  const handleBaseContinue = () => {
+    if (desvio) {
+      const destino = sequence.findIndex((item) => item.key === desvio.voltarPara);
+      const arquivo = stepFiles[desvio.voltarPara];
+      const origem = desvio.voltarPara;
+      setDesvio(null);
+      setBaseAberto(null);
+      if (destino >= 0) {
+        setStepIndex(destino);
+        goToScreen("steps", "validacao");
+        if (arquivo) validarArquivo(origem, arquivo);
+        return;
+      }
+    }
+    setBaseAberto(null);
   };
 
   const advance = (fromProgress) => {
     const nextSequence = buildSequence(fromProgress || progress);
     if (stepIndex >= nextSequence.length - 1) {
-      goToScreen("review", "validacao");
+      goToScreen("base", "validacao");
       return;
     }
     setStepIndex(stepIndex + 1);
@@ -241,8 +533,9 @@ function App() {
 
   const handleBack = () => {
     setDesvio(null);
+    // O primeiro passo do Movimento volta para a Base, nao para as boas-vindas.
     if (stepIndex === 0) {
-      goToScreen("welcome", "inicio");
+      goToScreen("base", "validacao");
       return;
     }
     setStepIndex(stepIndex - 1);
@@ -269,14 +562,24 @@ function App() {
     }
   };
 
+  // Apagar tudo tem que apagar TUDO — inclusive o que mora em memoria. Faltava
+  // `parsedPrevia`, e a tela de Prescricao continuava desenhando o dado de um
+  // progresso que nao existia mais. `versaoDados` entra como `key` do
+  // `NoHarmUI`: sem isso, a tela montada segue com o estado interno dela, que
+  // ela copiou de `arquivosIniciais` na montagem.
   const handleClear = () => {
     sessionIndexes.current = {};
+    parsedPrevia.current = {};
     setStepFiles({});
     setStepResults({});
+    setLote({ ocupado: false, progresso: { feito: 0, total: 0 }, resultados: [] });
+    setBaseAberto(null);
+    setDesvio(null);
     setProgress(Storage.clear());
     setStepIndex(0);
+    setVersaoDados((n) => n + 1);
     messageApi.success("Progresso apagado.");
-    goToScreen("welcome", "inicio");
+    goToScreen("inicio", "inicio");
   };
 
   const handleExportProgress = () =>
@@ -291,7 +594,7 @@ function App() {
       setProgress(imported);
       messageApi.success("Progresso reimportado.");
     } catch (err) {
-      messageApi.error(`Arquivo de progresso invalido: ${err.message}`);
+      messageApi.error(`Arquivo de progresso inválido: ${err.message}`);
     }
     return false;
   };
@@ -299,7 +602,7 @@ function App() {
   const handleExportReport = () => {
     const report = {
       geradoEm: new Date().toISOString(),
-      padrao: "Anexo I do Contrato NoHarm - Integracao de Dados",
+      padrao: "Anexo I do Contrato NoHarm - Integração de Dados",
       views: FILE_TYPES.map((file) => {
         const saved = progress.steps[file.key];
         return {
@@ -311,6 +614,8 @@ function App() {
           registros: saved ? saved.recordCount : null,
           colunasExtrasIgnoradas: saved ? saved.extraFields : null,
           erros: saved ? saved.issueCount : null,
+          // `saved` vem do progresso, que nao guarda valor vindo do arquivo:
+          // o relatorio leva a mensagem e a contagem, nao o dado do paciente.
           gruposDeErro: saved ? saved.issueGroups : null,
           validadoEm: saved ? saved.validatedAt : null,
         };
@@ -321,14 +626,13 @@ function App() {
 
   const handleMenu = ({ key }) => {
     setMenuKey(key);
-    if (key === "inicio") setScreen("welcome");
-    if (key === "validacao") setScreen("steps");
-    if (key === "dados") setScreen("dados");
-    if (key === "referencia") setScreen("referencia");
+    if (key === "validacao") setScreen("base");
+    if (key === "previa") setScreen("previa");
+    if (key === "inicio") setScreen("inicio");
   };
 
   if (!Validator || !Storage) {
-    return <div style={{ padding: 32 }}>Validador nao carregado. Recarregue a pagina.</div>;
+    return <div style={{ padding: 32 }}>Validador não carregado. Recarregue a página.</div>;
   }
 
   const isLast = stepIndex >= sequence.length - 1;
@@ -349,10 +653,9 @@ function App() {
             selectedKeys={[menuKey]}
             onClick={handleMenu}
             items={[
-              { key: "inicio", icon: <HomeOutlined />, label: "Inicio" },
-              { key: "validacao", icon: <FileSearchOutlined />, label: "Validacao" },
-              { key: "dados", icon: <DatabaseOutlined />, label: "Dados salvos" },
-              { key: "referencia", icon: <ReadOutlined />, label: "Referencia" },
+              { key: "inicio", icon: <HomeOutlined />, label: "Início" },
+              { key: "previa", icon: <MedicineBoxOutlined />, label: "Prescrição" },
+              { key: "validacao", icon: <AuditOutlined />, label: "Validação" },
             ]}
           />
         </Sider>
@@ -368,9 +671,47 @@ function App() {
               />
             )}
 
+            {screen === "base" && (
+              <div className="nh-wizard">
+                {desvio && <DetourBanner desvio={desvio} />}
+                <BaseScreen
+                  progress={progress}
+                  busy={baseBusy}
+                  aberto={baseAberto}
+                  desvio={desvio}
+                  onUpload={handleBaseUpload}
+                  onToggle={setBaseAberto}
+                  onContinue={handleBaseContinue}
+                  onShowFields={(key) => {
+                    setFieldsKey(key);
+                    setFieldsOpen(true);
+                  }}
+                  onExplainHospital={() => setHospitalOpen(true)}
+                  onExplicarRecorte={() => setRecorteOpen(true)}
+                  onIrPrescricao={() => goToScreen("previa", "previa")}
+                  onRemover={handleRemover}
+                  arquivos={stepFiles}
+                  resultados={stepResults}
+                  onExport={handleExportReport}
+                  onClear={handleClear}
+                  onExportProgress={handleExportProgress}
+                  onImportProgress={handleImportProgress}
+                  lote={lote}
+                  onLote={handleLote}
+                  onEscolherDoLote={handleEscolherDoLote}
+                  onLimparLote={() =>
+                    setLote({ ocupado: false, progresso: { feito: 0, total: 0 }, resultados: [] })
+                  }
+                />
+                <FieldsModal fileKey={fieldsKey} open={fieldsOpen} onClose={() => setFieldsOpen(false)} />
+                <HospitalModal open={hospitalOpen} onClose={() => setHospitalOpen(false)} />
+                <RecorteModal open={recorteOpen} onClose={() => setRecorteOpen(false)} />
+              </div>
+            )}
+
             {screen === "steps" && current && (
               <div className="nh-wizard">
-                <Timeline groupKey={current.group} position={groupPosition} total={groupSteps.length} />
+                <Timeline fase="movimento" position={posicaoMovimento} total={totalMovimento} />
 
                 {current.type === "ask" ? (
                   <AskStep
@@ -394,42 +735,46 @@ function App() {
                       busy={busy}
                       desvio={desvio && desvio.corrigindo === current.key ? desvio : null}
                       onExplainHospital={() => setHospitalOpen(true)}
+                  onExplicarRecorte={() => setRecorteOpen(true)}
                       onFixRef={handleFixRef}
                       onUpload={handleStepUpload}
                       onContinue={handleContinue}
                       onSkip={handleSkip}
                       onBack={handleBack}
                       onRedo={() => handleRedo(current.key)}
-                      onFinish={() => goToScreen("review", "validacao")}
-                      onShowFields={() => setFieldsOpen(true)}
+                      onFinish={() => goToScreen("base", "validacao")}
+                      onShowFields={() => {
+                        setFieldsKey(current.key);
+                        setFieldsOpen(true);
+                      }}
                     />
-                    <FieldsModal fileKey={current.key} open={fieldsOpen} onClose={() => setFieldsOpen(false)} />
+                    <FieldsModal fileKey={fieldsKey || current.key} open={fieldsOpen} onClose={() => setFieldsOpen(false)} />
                     <HospitalModal open={hospitalOpen} onClose={() => setHospitalOpen(false)} />
+                <RecorteModal open={recorteOpen} onClose={() => setRecorteOpen(false)} />
                   </>
                 )}
               </div>
             )}
 
-            {screen === "review" && (
-              <ReviewScreen
+            {screen === "inicio" && (
+              <HomeScreen
                 progress={progress}
-                onBackToSteps={() => goToScreen("steps", "validacao")}
-                onJump={handleJump}
-                onExport={handleExportReport}
+                onIr={(key) => {
+                  setMenuKey(key);
+                  if (key === "validacao" || key === "referencia" || key === "review") setScreen("base");
+                  else setScreen(key);
+                }}
               />
             )}
 
-            {screen === "dados" && (
-              <SavedDataScreen
-                progress={progress}
-                onClear={handleClear}
-                onExport={handleExportProgress}
-                onImport={handleImportProgress}
-                onResetStep={handleRedo}
+            {screen === "previa" && (
+              <NoHarmUI
+                key={versaoDados}
+                arquivosIniciais={parsedPrevia.current}
+                onValidado={registrarDaPrescricao}
+                onIrValidacao={() => goToScreen("base", "validacao")}
               />
             )}
-
-            {screen === "referencia" && <ReferenceScreen />}
           </Content>
         </Layout>
       </Layout>
