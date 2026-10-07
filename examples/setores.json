@@ -1,7 +1,22 @@
 [
   {
-    "FKHOSPITAL": 1,
-    "FKSETOR": 10,
-    "NOME": "CLINICA MEDICA"
+    "FKHOSPITAL": "1",
+    "FKSETOR": "10",
+    "NOME": "CLÍNICA MÉDICA"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKSETOR": "20",
+    "NOME": "UTI ADULTO"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKSETOR": "30",
+    "NOME": "PRONTO SOCORRO"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKSETOR": "40",
+    "NOME": "CENTRO CIRÚRGICO"
   }
 ]

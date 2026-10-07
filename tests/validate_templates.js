@@ -8,7 +8,7 @@ const runBatch = async (format) => {
   for (const file of validator.FILE_TYPES) {
     const fileName = validator.getTemplateFileName(file.key, format);
     const text = format === "json" ? validator.buildTemplateJson(file.key) : validator.buildTemplateCsv(file.key);
-    assert.ok(text, `Modelo ${format} de ${file.key} nao foi gerado.`);
+    assert.ok(text, `Modelo ${format} de ${file.key} não foi gerado.`);
     parsed[file.key] = await validator.parseFileText(fileName, text);
   }
 
@@ -32,7 +32,7 @@ const runBatch = async (format) => {
 
 // Regressao das regras que motivaram o ajuste do validador.
 const runRuleChecks = async () => {
-  const csvComDecimalVirgula = "FKHOSPITAL,FKSETOR,NOME\n1,10,CLINICA MEDICA\n1,20,UTI,ADULTO 0,5\n";
+  const csvComDecimalVirgula = "FKHOSPITAL,FKSETOR,NOME\n1,10,CLÍNICA MÉDICA\n1,20,UTI,ADULTO 0,5\n";
   const parsedVirgula = await validator.parseFileText("setores.csv", csvComDecimalVirgula);
   assert.ok(parsedVirgula.malformedRows.size > 0, "Deveria marcar a linha com colunas a mais.");
   assert.ok(parsedVirgula.parseHints.includes("csvFieldCount"), "Deveria sugerir a dica de quantidade de colunas.");

@@ -1,2 +1,7 @@
 FKHOSPITAL,FKFREQUENCIA,NOME
+1,6/6,6 em 6 horas
 1,8/8,8 em 8 horas
+1,12/12,12 em 12 horas
+1,24/24,24 em 24 horas
+1,SN,Se necessário
+1,CONT,Infusao continua

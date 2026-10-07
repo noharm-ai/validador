@@ -1,0 +1,42 @@
+[
+  {
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "FKSETOR": "30",
+    "NOMESETOR": "PRONTO SOCORRO",
+    "LEITO": "PS-07",
+    "DTENTRADA": "2026-02-05T22:40:00",
+    "DTSAIDA": "2026-02-06T04:15:00",
+    "AGRUPADA": "1"
+  },
+  {
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "FKSETOR": "20",
+    "NOMESETOR": "UTI ADULTO",
+    "LEITO": "20-A",
+    "DTENTRADA": "2026-02-06T04:15:00",
+    "DTSAIDA": "",
+    "AGRUPADA": "1"
+  },
+  {
+    "FKPESSOA": "5002",
+    "NRATENDIMENTO": "7002",
+    "FKSETOR": "40",
+    "NOMESETOR": "CENTRO CIRÚRGICO",
+    "LEITO": "CC-02",
+    "DTENTRADA": "2026-02-06T14:00:00",
+    "DTSAIDA": "2026-02-06T16:30:00",
+    "AGRUPADA": "1"
+  },
+  {
+    "FKPESSOA": "5002",
+    "NRATENDIMENTO": "7002",
+    "FKSETOR": "10",
+    "NOMESETOR": "CLÍNICA MÉDICA",
+    "LEITO": "102-B",
+    "DTENTRADA": "2026-02-06T16:30:00",
+    "DTSAIDA": "",
+    "AGRUPADA": "1"
+  }
+]

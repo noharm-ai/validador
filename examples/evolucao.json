@@ -1,0 +1,34 @@
+[
+  {
+    "FKEVOLUCAO": "6001",
+    "DTEVOLUCAO": "2026-02-07T07:30:00",
+    "NRATENDIMENTO": "7001",
+    "NOME": "DRA EXEMPLO UM",
+    "CARGO": "MÉDICO",
+    "TEXTO": "Paciente no 2o dia de internação em UTI por pneumonia adquirida na comunidade. Mantem-se febril (37.9C), em cateter nasal de O2 a 3 L/min, saturando 94%. Ausculta com estertores em base direita. Hemocultura positiva para S. pneumoniae, sensivel a ceftriaxona - mantida a antibioticoterapia. Creatinina em elevacao (1.52 para 1.84): reavaliar doses ajustadas a funcao renal."
+  },
+  {
+    "FKEVOLUCAO": "6002",
+    "DTEVOLUCAO": "2026-02-07T10:15:00",
+    "NRATENDIMENTO": "7001",
+    "NOME": "FARMACEUTICA EXEMPLO",
+    "CARGO": "FARMACÊUTICO",
+    "TEXTO": "Revisão da prescrição. Ceftriaxona 1g 12/12h adequada ao foco e ao antibiograma. Clearance estimado em 41 ml/min: sugerida reducao da furosemida para 1 ampola 12/12h e monitorizacao de potassio. Paciente alérgico a sulfametoxazol + trimetoprima - nenhum item da prescrição conflita. Orientada a enfermagem quanto a diluicao da ceftriaxona em 100 ml de SF e infusao em 30 minutos."
+  },
+  {
+    "FKEVOLUCAO": "6003",
+    "DTEVOLUCAO": "2026-02-07T19:00:00",
+    "NRATENDIMENTO": "7001",
+    "NOME": "ENFERMEIRO EXEMPLO",
+    "CARGO": "ENFERMEIRO",
+    "TEXTO": "Plantao sem intercorrencias. Dieta enteral em infusao continua, boa tolerancia, sem residuo gastrico significativo. Diurese de 1450 ml nas últimas 24h. Metoclopramida suspensa as 14h20 conforme avaliacao médica. Acesso venoso central em jugular direita, sem sinais flogisticos."
+  },
+  {
+    "FKEVOLUCAO": "6004",
+    "DTEVOLUCAO": "2026-02-07T09:40:00",
+    "NRATENDIMENTO": "7002",
+    "NOME": "DR EXEMPLO DOIS",
+    "CARGO": "MÉDICO",
+    "TEXTO": "Pos-operatorio imediato de colecistectomia videolaparoscopica, sem intercorrencias. Dor controlada com dipirona. Aceita dieta liquida. Previsao de alta em 24 horas."
+  }
+]

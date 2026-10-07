@@ -1,12 +1,146 @@
 [
   {
-    "FKHOSPITAL": 1,
-    "FKEXAME": 8001,
-    "FKPESSOA": 5001,
-    "NRATENDIMENTO": 7001,
-    "DTEXAME": "2026-02-07T08:00:00",
-    "TPEXAME": "HEMOGLOBINA",
-    "RESULTADO": "12.5",
+    "FKEXAME": "8001",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "HB",
+    "RESULTADO": "9.4",
     "UNIDADE": "g/dL"
+  },
+  {
+    "FKEXAME": "8002",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "HT",
+    "RESULTADO": "29.1",
+    "UNIDADE": "%"
+  },
+  {
+    "FKEXAME": "8003",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "LEUCO",
+    "RESULTADO": "14300",
+    "UNIDADE": "/mm3"
+  },
+  {
+    "FKEXAME": "8004",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "PLAQ",
+    "RESULTADO": "212000",
+    "UNIDADE": "/mm3"
+  },
+  {
+    "FKEXAME": "8005",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "CR",
+    "RESULTADO": "1.84",
+    "UNIDADE": "mg/dL"
+  },
+  {
+    "FKEXAME": "8006",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "UR",
+    "RESULTADO": "72",
+    "UNIDADE": "mg/dL"
+  },
+  {
+    "FKEXAME": "8007",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "NA",
+    "RESULTADO": "137",
+    "UNIDADE": "mEq/L"
+  },
+  {
+    "FKEXAME": "8008",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "K",
+    "RESULTADO": "4.2",
+    "UNIDADE": "mEq/L"
+  },
+  {
+    "FKEXAME": "8009",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "PCR",
+    "RESULTADO": "86",
+    "UNIDADE": "mg/L"
+  },
+  {
+    "FKEXAME": "8010",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "TGO",
+    "RESULTADO": "34",
+    "UNIDADE": "U/L"
+  },
+  {
+    "FKEXAME": "8011",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "TGP",
+    "RESULTADO": "41",
+    "UNIDADE": "U/L"
+  },
+  {
+    "FKEXAME": "8012",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-07T06:30:00",
+    "TPEXAME": "INR",
+    "RESULTADO": "1.2",
+    "UNIDADE": ""
+  },
+  {
+    "FKEXAME": "8013",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "DTEXAME": "2026-02-06T06:30:00",
+    "TPEXAME": "CR",
+    "RESULTADO": "1.52",
+    "UNIDADE": "mg/dL"
+  },
+  {
+    "FKEXAME": "8014",
+    "FKPESSOA": "5002",
+    "NRATENDIMENTO": "7002",
+    "DTEXAME": "2026-02-07T07:20:00",
+    "TPEXAME": "HB",
+    "RESULTADO": "12.8",
+    "UNIDADE": "g/dL"
+  },
+  {
+    "FKEXAME": "8015",
+    "FKPESSOA": "5002",
+    "NRATENDIMENTO": "7002",
+    "DTEXAME": "2026-02-07T07:20:00",
+    "TPEXAME": "LEUCO",
+    "RESULTADO": "8200",
+    "UNIDADE": "/mm3"
+  },
+  {
+    "FKEXAME": "8016",
+    "FKPESSOA": "5002",
+    "NRATENDIMENTO": "7002",
+    "DTEXAME": "2026-02-07T07:20:00",
+    "TPEXAME": "CR",
+    "RESULTADO": "0.8",
+    "UNIDADE": "mg/dL"
   }
 ]
