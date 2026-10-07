@@ -1,12 +1,20 @@
 [
   {
-    "FKHOSPITAL": 1,
-    "FKEXAME": 8001,
-    "FKPESSOA": 5001,
-    "NRATENDIMENTO": 7001,
+    "FKEXAME": "8001",
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
     "DTEXAME": "2026-02-07T08:00:00",
     "TPEXAME": "HEMOGLOBINA",
     "RESULTADO": "12.5",
     "UNIDADE": "g/dL"
+  },
+  {
+    "FKEXAME": "8002",
+    "FKPESSOA": "5002",
+    "NRATENDIMENTO": "7002",
+    "DTEXAME": "2026-02-07T16:00:00",
+    "TPEXAME": "CREATININA",
+    "RESULTADO": "0.9",
+    "UNIDADE": "mg/dL"
   }
 ]

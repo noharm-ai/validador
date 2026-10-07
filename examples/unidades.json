@@ -1,7 +1,12 @@
 [
   {
-    "FKHOSPITAL": 1,
+    "FKHOSPITAL": "1",
     "FKUNIDADEMEDIDA": "MG",
     "NOME": "Miligramas"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKUNIDADEMEDIDA": "ML",
+    "NOME": "Mililitros"
   }
 ]

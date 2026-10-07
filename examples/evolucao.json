@@ -1,0 +1,18 @@
+[
+  {
+    "FKEVOLUCAO": "6001",
+    "DTEVOLUCAO": "2026-02-07T11:00:00",
+    "NRATENDIMENTO": "7001",
+    "NOME": "ANA SOUZA",
+    "CARGO": "FARMACEUTICO",
+    "TEXTO": "Paciente estavel. Mantida antibioticoterapia conforme prescricao."
+  },
+  {
+    "FKEVOLUCAO": "6002",
+    "DTEVOLUCAO": "2026-02-07T17:00:00",
+    "NRATENDIMENTO": "7002",
+    "NOME": "BRUNO LIMA",
+    "CARGO": "MEDICO",
+    "TEXTO": "Ajuste de dose de analgesico. Reavaliar em 24 horas."
+  }
+]

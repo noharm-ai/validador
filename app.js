@@ -1,606 +1,439 @@
-const { useMemo, useRef, useState } = React;
-const {
-  Layout,
-  Menu,
-  Input,
-  Button,
-  Card,
-  Upload,
-  Typography,
-  Row,
-  Col,
-  Tag,
-  Badge,
-  Space,
-  Divider,
-  Alert,
-  Collapse,
-  List,
-} = antd;
+// Casca do validador: sequencia do passo a passo, estado e persistencia.
+// As telas estao em wizard.js e o motor em validator.js.
 
-const {
-  UserOutlined,
-  FileSearchOutlined,
-  DatabaseOutlined,
-  CloudUploadOutlined,
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  WarningOutlined,
-  FileTextOutlined,
-  SettingOutlined,
-  DownloadOutlined,
-  BulbOutlined,
-} = icons;
+const { useCallback, useEffect, useMemo, useRef, useState } = React;
+const { Layout, Menu, message, ConfigProvider } = antd;
+const { FileSearchOutlined, DatabaseOutlined, ReadOutlined, HomeOutlined } = icons;
 
-const { Header, Sider, Content } = Layout;
-const { Title, Text } = Typography;
-const { Dragger } = Upload;
+const { Sider, Content } = Layout;
 
-const Validator = window.NoHarmValidator;
-const FILE_TYPES = Validator
-  ? Validator.FILE_TYPES
-  : [
-      { key: "prescricoes", label: "Prescricoes" },
-      { key: "pessoa", label: "Pessoa/Atendimento" },
-      { key: "medicamentos", label: "Medicamentos" },
-      { key: "setores", label: "Setores" },
-      { key: "unidades", label: "Unidades" },
-      { key: "frequencia", label: "Frequencia" },
-      { key: "exame", label: "Exames" },
-      { key: "alergia", label: "Alergias" },
-      { key: "cultura", label: "Culturas" },
-    ];
-const NOHARM_SCHEMA = Validator ? Validator.NOHARM_SCHEMA : null;
+// Views OPCIONAIS por grupo. Em vez de virarem passos que o cliente pula uma a
+// uma, o passo a passo pergunta de uma vez quais ele tem.
+const OPTIONALS_BY_GROUP = GROUPS.reduce((acc, group) => {
+  const opcionais = FILE_TYPES.filter((file) => file.group === group.key && file.criticality === "opcional");
+  if (opcionais.length) acc[group.key] = opcionais.map((file) => file.key);
+  return acc;
+}, {});
 
-const formatBytes = (bytes) => {
-  if (!bytes) return "0 B";
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const val = bytes / Math.pow(1024, i);
-  return `${val.toFixed(1)} ${sizes[i]}`;
-};
+// A sequencia e montada a partir do que o cliente respondeu: as essenciais
+// sempre entram, a pergunta entra antes das opcionais do grupo, e so as
+// marcadas viram passo.
+const buildSequence = (progress) => {
+  const sequence = [];
+  GROUPS.forEach((group) => {
+    FILE_TYPES.filter((file) => file.group === group.key && file.criticality === "essencial").forEach((file) =>
+      sequence.push({ type: "view", key: file.key, group: group.key })
+    );
 
-const downloadText = (fileName, text, mime) => {
-  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
+    const opcionais = OPTIONALS_BY_GROUP[group.key];
+    if (!opcionais) return;
 
-const downloadTemplate = (fileKey, format) => {
-  if (!Validator) return;
-  const text = format === "json" ? Validator.buildTemplateJson(fileKey) : Validator.buildTemplateCsv(fileKey);
-  if (!text) return;
-  downloadText(
-    Validator.getTemplateFileName(fileKey, format),
-    text,
-    format === "json" ? "application/json" : "text/csv"
-  );
-};
-
-const downloadAllTemplates = async (format) => {
-  for (const file of FILE_TYPES) {
-    downloadTemplate(file.key, format);
-    // O browser bloqueia downloads em rajada; um respiro entre eles resolve.
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
+    sequence.push({ type: "ask", key: `ask-${group.key}`, group: group.key, options: opcionais });
+    opcionais.forEach((fileKey) => {
+      if ((progress.optionals || {})[fileKey]) sequence.push({ type: "view", key: fileKey, group: group.key });
+    });
+  });
+  return sequence;
 };
 
 function App() {
-  const [files, setFiles] = useState({
-    prescricoes: null,
-    pessoa: null,
-    medicamentos: null,
-    setores: null,
-    unidades: null,
-    frequencia: null,
-    exame: null,
-    alergia: null,
-    cultura: null,
-  });
-  const [results, setResults] = useState(null);
+  const [progress, setProgress] = useState(() => (Storage ? Storage.load() : null));
+  const [screen, setScreen] = useState("welcome");
+  const [menuKey, setMenuKey] = useState("validacao");
+  const [stepIndex, setStepIndex] = useState(0);
+  // Guardados por etapa: sair e voltar nao pode perder o arquivo que o cliente
+  // ja enviou naquele passo.
+  const [stepFiles, setStepFiles] = useState({});
+  const [stepResults, setStepResults] = useState({});
+  const [askChoice, setAskChoice] = useState([]);
+  const [fieldsOpen, setFieldsOpen] = useState(false);
+  // Desvio: o cliente saiu de uma etapa para corrigir uma view anterior. Guarda
+  // de onde ele veio e o que exatamente esta faltando, para a etapa de destino
+  // poder dizer o que incluir.
+  const [desvio, setDesvio] = useState(null);
+  const [hospitalOpen, setHospitalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [mappingWarnings, setMappingWarnings] = useState([]);
-  const [searchHintVisible, setSearchHintVisible] = useState(false);
-  const searchHintTimerRef = useRef(null);
+  const [messageApi, messageHolder] = message.useMessage();
 
-  const schemaPreview = useMemo(() => {
-    return FILE_TYPES.map((file) => ({
-      key: file.key,
-      label: file.label,
-      fields: NOHARM_SCHEMA ? Array.from(new Set(NOHARM_SCHEMA.files[file.key].allowed)).sort() : [],
-    }));
-  }, []);
+  // Indices de chave desta sessao. Views grandes nao cabem no localStorage, mas
+  // dentro da sessao servem a validacao cruzada.
+  const sessionIndexes = useRef({});
 
-  const handleFile = (key) => (file) => {
-    setFiles((prev) => ({ ...prev, [key]: file }));
-    setMappingWarnings([]);
+  const sequence = useMemo(() => (progress ? buildSequence(progress) : []), [progress]);
+  const current = sequence[Math.min(stepIndex, sequence.length - 1)];
+  const savedStep = progress && current && current.type === "view" ? progress.steps[current.key] : null;
+  const stepFile = current ? stepFiles[current.key] || null : null;
+  const stepResult = current ? stepResults[current.key] || null : null;
+
+  // Posicao dentro do grupo, para a linha do tempo.
+  const groupSteps = current ? sequence.filter((item) => item.group === current.group) : [];
+  const groupPosition = current ? groupSteps.findIndex((item) => item.key === current.key) + 1 : 0;
+
+  const externalIndexes = useCallback(
+    () => Object.assign({}, progress ? progress.indexes : {}, sessionIndexes.current),
+    [progress]
+  );
+
+  // O cliente nao pula etapa: o primeiro passo pendente e ate onde ele pode ir.
+  const firstPendingIndex = useCallback(() => {
+    if (!progress) return 0;
+    const index = sequence.findIndex((item) =>
+      item.type === "ask" ? !Storage.hasAnswered(progress, item.options) : !progress.steps[item.key]
+    );
+    return index === -1 ? Math.max(sequence.length - 1, 0) : index;
+  }, [progress, sequence]);
+
+  useEffect(() => {
+    setFieldsOpen(false);
+    setHospitalOpen(false);
+    if (current && current.type === "ask") {
+      setAskChoice(current.options.filter((key) => (progress.optionals || {})[key]));
+    }
+  }, [stepIndex, sequence.length]);
+
+  const goToScreen = (next, key) => {
+    setScreen(next);
+    if (key) setMenuKey(key);
+  };
+
+  const handleStart = () => {
+    setStepIndex(0);
+    goToScreen("steps", "validacao");
+  };
+
+  const handleResume = () => {
+    setStepIndex(firstPendingIndex());
+    goToScreen("steps", "validacao");
+  };
+
+  const handleRestart = () => {
+    sessionIndexes.current = {};
+    setStepFiles({});
+    setStepResults({});
+    setProgress(Storage.clear());
+    setStepIndex(0);
+    goToScreen("steps", "validacao");
+  };
+
+  // Volta para uma etapa ja concluida. Ir para frente, so pelo Continuar.
+  const handleJump = (fileKey) => {
+    const index = sequence.findIndex((item) => item.key === fileKey);
+    if (index < 0) return;
+    setStepIndex(Math.min(index, firstPendingIndex()));
+    goToScreen("steps", "validacao");
+  };
+
+  const validarArquivo = async (fileKey, file) => {
+    if (!Validator) {
+      messageApi.error("Validador nao carregado. Recarregue a pagina.");
+      return false;
+    }
+    setBusy(true);
+    setStepFiles((prev) => Object.assign({}, prev, { [fileKey]: file }));
+    setStepResults((prev) => {
+      const next = Object.assign({}, prev);
+      delete next[fileKey];
+      return next;
+    });
+    try {
+      const text = await file.text();
+      const parsed = await Validator.parseFileText(file.name, text);
+      const result = Validator.validateFile(fileKey, parsed, { externalIndexes: externalIndexes() });
+
+      const index = Validator.buildKeyIndex(fileKey, parsed);
+      if (index.length) sessionIndexes.current[fileKey] = index;
+      const preview = Validator.buildPreview(fileKey, parsed);
+
+      setStepResults((prev) =>
+        Object.assign({}, prev, {
+          [fileKey]: Object.assign({}, result, {
+            __index: index,
+            __preview: preview,
+            preview,
+            __fileMeta: { fileName: file.name, fileSize: file.size, format: parsed.format },
+          }),
+        })
+      );
+    } catch (err) {
+      messageApi.error(`Nao foi possivel ler o arquivo: ${err.message}`);
+      setStepFiles((prev) => {
+        const next = Object.assign({}, prev);
+        delete next[fileKey];
+        return next;
+      });
+    } finally {
+      setBusy(false);
+    }
+
     return false;
   };
 
-  const fileAliases = {
-    prescricoes: ["prescricao", "prescricoes", "presc"],
-    pessoa: ["pessoa", "pessoas", "paciente", "pacientes", "atendimento", "atendimentos"],
-    medicamentos: ["medicamento", "medicamentos", "med"],
-    setores: ["setor", "setores"],
-    unidades: ["unidade", "unidades", "unidademedida", "uni"],
-    frequencia: ["frequencia", "frequencias", "freq"],
-    exame: ["exame", "exames"],
-    alergia: ["alergia", "alergias"],
-    cultura: ["cultura", "culturas"],
+  const handleStepUpload = (file) => validarArquivo(current.key, file);
+
+  // Erro de chave estrangeira aponta para outra view. Em vez de voltar na mao
+  // etapa por etapa, o cliente pula direto para ela levando junto a lista do
+  // que falta incluir.
+  const handleFixRef = (group) => {
+    const index = sequence.findIndex((item) => item.key === group.refFile);
+    if (index < 0) return;
+    setDesvio({
+      voltarPara: current.key,
+      corrigindo: group.refFile,
+      campo: group.refField,
+      valores: group.distinctValues || [],
+      total: group.distinctCount || 0,
+    });
+    setStepIndex(index);
   };
 
-  const getFileBaseName = (name) => name.toLowerCase().replace(/\.(csv|json)$/i, "");
-
-  const matchFileKey = (fileName) => {
-    const base = getFileBaseName(fileName);
-    const scores = FILE_TYPES.map((file) => {
-      const aliases = fileAliases[file.key] || [];
-      const match = aliases.reduce((best, alias) => (base.includes(alias) ? Math.max(best, alias.length) : best), 0);
-      return { key: file.key, score: match };
-    }).filter((entry) => entry.score > 0);
-
-    if (scores.length === 0) return null;
-    scores.sort((a, b) => b.score - a.score);
-    if (scores.length > 1 && scores[0].score === scores[1].score) {
-      return { key: scores[0].key, ambiguous: true };
+  const advance = (fromProgress) => {
+    const nextSequence = buildSequence(fromProgress || progress);
+    if (stepIndex >= nextSequence.length - 1) {
+      goToScreen("review", "validacao");
+      return;
     }
-    return { key: scores[0].key, ambiguous: false };
+    setStepIndex(stepIndex + 1);
   };
 
-  const handleBatchUpload = (info) => {
-    const warnings = [];
-    const incoming = {};
-    const list = info.fileList || [];
-    list.forEach((entry) => {
-      const file = entry.originFileObj || entry;
-      if (!file) return;
-      const match = matchFileKey(file.name);
-      if (!match) {
-        warnings.push(`Arquivo ${file.name} ignorado: nome nao corresponde a nenhum tipo.`); 
+  const handleContinue = () => {
+    let next = progress;
+    if (stepResult) {
+      next = Storage.saveStep(
+        next,
+        current.key,
+        stepResult,
+        stepResult.__fileMeta,
+        stepResult.__index,
+        stepResult.__preview
+      );
+      setProgress(next);
+    }
+
+    if (desvio) {
+      const destino = sequence.findIndex((item) => item.key === desvio.voltarPara);
+      const arquivo = stepFiles[desvio.voltarPara];
+      const origem = desvio.voltarPara;
+      setDesvio(null);
+      if (destino >= 0) {
+        setStepIndex(destino);
+        // O resultado guardado la foi conferido contra o arquivo antigo: refaz
+        // a validacao com o que acabou de ser corrigido.
+        if (arquivo) validarArquivo(origem, arquivo);
         return;
       }
-      if (match.ambiguous) {
-        warnings.push(`Arquivo ${file.name} pode corresponder a mais de um tipo. Usando ${match.key}.`); 
-      }
-      if (incoming[match.key] || files[match.key]) {
-        warnings.push(`Arquivo ${file.name} substituiu ${match.key}.`);
-      }
-      incoming[match.key] = file;
-    });
-
-    if (Object.keys(incoming).length) {
-      setFiles((prev) => ({ ...prev, ...incoming }));
     }
-    setMappingWarnings(warnings);
-    setResults(null);
+
+    advance(next);
   };
 
-  const clearFiles = () => {
-    setFiles({
-      prescricoes: null,
-      pessoa: null,
-      medicamentos: null,
-      setores: null,
-      unidades: null,
-      frequencia: null,
-      exame: null,
-      alergia: null,
-      cultura: null,
-    });
-    setResults(null);
-    setMappingWarnings([]);
+  const handleAskContinue = () => {
+    const next = Storage.setOptionals(progress, current.options, askChoice);
+    setProgress(next);
+    advance(next);
   };
 
-  const validateAll = async () => {
-    setBusy(true);
-    setResults(null);
+  const handleSkip = () => {
+    const next = Storage.skipStep(progress, current.key);
+    setProgress(next);
+    delete sessionIndexes.current[current.key];
+    advance(next);
+  };
 
-    if (!Validator) {
-      setResults({
-        summary: { status: "error", message: "Validador nao carregado. Recarregue a pagina." },
-        files: {},
-      });
-      setBusy(false);
+  const handleBack = () => {
+    setDesvio(null);
+    if (stepIndex === 0) {
+      goToScreen("welcome", "inicio");
       return;
     }
+    setStepIndex(stepIndex - 1);
+  };
 
-    const missing = FILE_TYPES.filter((file) => !files[file.key]).map((file) => file.label);
-    if (missing.length) {
-      setResults({
-        summary: { status: "error", message: `Arquivos faltando: ${missing.join(", ")}` },
-        files: {},
-      });
-      setBusy(false);
-      return;
+  const handleRedo = (fileKey) => {
+    const next = Storage.resetStep(progress, fileKey);
+    setProgress(next);
+    delete sessionIndexes.current[fileKey];
+    setStepFiles((prev) => {
+      const copy = Object.assign({}, prev);
+      delete copy[fileKey];
+      return copy;
+    });
+    setStepResults((prev) => {
+      const copy = Object.assign({}, prev);
+      delete copy[fileKey];
+      return copy;
+    });
+    const index = buildSequence(next).findIndex((item) => item.key === fileKey);
+    if (index >= 0) {
+      setStepIndex(index);
+      goToScreen("steps", "validacao");
     }
-
-    const parsedFiles = {};
-
-    await Promise.all(
-      FILE_TYPES.map(async (file) => {
-        const target = files[file.key];
-        const text = await target.text();
-        parsedFiles[file.key] = await Validator.parseFileText(target.name, text);
-      })
-    );
-
-    const result = Validator.validateParsed(parsedFiles);
-    setResults(result);
-    setBusy(false);
   };
 
-  const downloadReport = () => {
-    if (!results) return;
-    // O campo parsed carrega o dado bruto inteiro e estoura o arquivo sem
-    // ajudar em nada no diagnostico.
-    const { parsed, ...report } = results;
-    downloadText("noharm-validacao.json", JSON.stringify(report, null, 2), "application/json");
+  const handleClear = () => {
+    sessionIndexes.current = {};
+    setStepFiles({});
+    setStepResults({});
+    setProgress(Storage.clear());
+    setStepIndex(0);
+    messageApi.success("Progresso apagado.");
+    goToScreen("welcome", "inicio");
   };
 
-  const summaryContent = results?.summary ? (
-    <Alert
-      message={results.summary.message}
-      type={results.summary.status === "ok" ? "success" : results.summary.status === "warn" ? "warning" : "error"}
-      showIcon
-    />
-  ) : (
-    <Alert message="Selecione os arquivos e rode a validacao." type="info" showIcon />
-  );
+  const handleExportProgress = () =>
+    downloadText("noharm-validador-progresso.json", Storage.exportJson(progress), "application/json");
+
+  const handleImportProgress = async (file) => {
+    try {
+      const imported = Storage.importJson(await file.text());
+      sessionIndexes.current = {};
+      setStepFiles({});
+      setStepResults({});
+      setProgress(imported);
+      messageApi.success("Progresso reimportado.");
+    } catch (err) {
+      messageApi.error(`Arquivo de progresso invalido: ${err.message}`);
+    }
+    return false;
+  };
+
+  const handleExportReport = () => {
+    const report = {
+      geradoEm: new Date().toISOString(),
+      padrao: "Anexo I do Contrato NoHarm - Integracao de Dados",
+      views: FILE_TYPES.map((file) => {
+        const saved = progress.steps[file.key];
+        return {
+          view: file.view,
+          grupo: file.group,
+          criticidade: file.criticality,
+          status: saved ? saved.status : "pendente",
+          arquivo: saved ? saved.fileName : null,
+          registros: saved ? saved.recordCount : null,
+          colunasExtrasIgnoradas: saved ? saved.extraFields : null,
+          erros: saved ? saved.issueCount : null,
+          gruposDeErro: saved ? saved.issueGroups : null,
+          validadoEm: saved ? saved.validatedAt : null,
+        };
+      }),
+    };
+    downloadText("noharm-validacao.json", `${JSON.stringify(report, null, 2)}\n`, "application/json");
+  };
+
+  const handleMenu = ({ key }) => {
+    setMenuKey(key);
+    if (key === "inicio") setScreen("welcome");
+    if (key === "validacao") setScreen("steps");
+    if (key === "dados") setScreen("dados");
+    if (key === "referencia") setScreen("referencia");
+  };
+
+  if (!Validator || !Storage) {
+    return <div style={{ padding: 32 }}>Validador nao carregado. Recarregue a pagina.</div>;
+  }
+
+  const isLast = stepIndex >= sequence.length - 1;
 
   return (
-    <Layout className="nh-layout">
-      <Sider width={72} className="nh-sider">
-        <div style={{ height: 64, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <img src="imgs/logo192.png" alt="NoHarm" style={{ width: 28, height: 28 }} />
-        </div>
-        <Menu
-          mode="inline"
-          defaultSelectedKeys={["validador"]}
-          items={[
-            { key: "validador", icon: <FileSearchOutlined />, label: "Validador" },
-            { key: "dados", icon: <DatabaseOutlined />, label: "Dados" },
-            { key: "arquivos", icon: <FileTextOutlined />, label: "Arquivos" },
-            { key: "config", icon: <SettingOutlined />, label: "Config" },
-          ]}
-        />
-      </Sider>
-
-      <Layout>
-        <Header className="nh-header">
-          <div className="nh-search">
-            <Input.Search
-              placeholder="Buscar por numero do atendimento ou prescricao"
-              onSearch={() => {
-                if (searchHintTimerRef.current) {
-                  clearTimeout(searchHintTimerRef.current);
-                }
-                setSearchHintVisible(true);
-                searchHintTimerRef.current = setTimeout(() => {
-                  setSearchHintVisible(false);
-                }, 2200);
-              }}
-            />
-            {searchHintVisible && (
-              <div className="nh-search-hint">Nada por aqui, por enquanto ;)</div>
-            )}
+    <ConfigProvider
+      theme={{ token: { colorPrimary: "#46a46a", colorLink: "#46a46a", borderRadius: 8, fontSize: 14 } }}
+    >
+      <Layout className="nh-layout">
+        {messageHolder}
+        <Sider width={200} className="nh-sider" breakpoint="lg" collapsedWidth={0}>
+          <div className="nh-sider-brand">
+            <img src="imgs/logo192.png" alt="NoHarm" />
+            <span>Validador</span>
           </div>
-          <div className="nh-user">
-            <Tag color="gold">HOMOLOGACAO</Tag>
-            <Badge dot>
-              <UserOutlined style={{ fontSize: 18 }} />
-            </Badge>
-            <Text strong>Validador</Text>
-          </div>
-        </Header>
-
-        <Content className="nh-content">
-          <Title level={3} className="nh-title">
-            Validador de Integracao
-          </Title>
-          <Text className="nh-subtitle">Valide arquivos CSV ou JSON contra os padroes NoHarm.</Text>
-
-          <div className="nh-toolbar">
-            <Space size="middle" wrap>
-              <Text strong>Padrao NoHarm</Text>
-              <Tag color="green">Unico</Tag>
-            </Space>
-
-            <div className="nh-actions">
-              <Button onClick={clearFiles}>Limpar</Button>
-              <Button type="primary" loading={busy} onClick={validateAll} style={{ background: "#58b47b" }}>
-                Validar arquivos
-              </Button>
-              <Button disabled={!results} onClick={downloadReport}>
-                Exportar relatorio
-              </Button>
-            </div>
-          </div>
-
-          {summaryContent}
-          {mappingWarnings.length > 0 && (
-            <Alert
-              style={{ marginTop: 12 }}
-              type="warning"
-              showIcon
-              message="Avisos de mapeamento"
-              description={
-                <List
-                  size="small"
-                  dataSource={mappingWarnings}
-                  renderItem={(item) => <List.Item>{item}</List.Item>}
-                />
-              }
-            />
-          )}
-
-          <Card className="nh-card" style={{ marginTop: 16 }} bodyStyle={{ padding: 16 }}>
-            <div className="nh-templates-head">
-              <div>
-                <div className="nh-upload-label">Modelos para download</div>
-                <div className="nh-upload-meta">
-                  Lote de exemplo coerente entre si (as chaves estrangeiras fecham). Use como base da extracao: datas em{" "}
-                  {Validator ? Validator.DATE_FORMAT_LABEL : "YYYY-MM-DD"}, decimal com ponto, arquivo em UTF-8.
-                </div>
-              </div>
-              <Space wrap>
-                <Button icon={<DownloadOutlined />} onClick={() => downloadAllTemplates("csv")}>
-                  Baixar todos (CSV)
-                </Button>
-                <Button icon={<DownloadOutlined />} onClick={() => downloadAllTemplates("json")}>
-                  Baixar todos (JSON)
-                </Button>
-              </Space>
-            </div>
-            <div className="nh-templates-grid">
-              {FILE_TYPES.map((file) => (
-                <div className="nh-template-item" key={`template-${file.key}`}>
-                  <Text strong>{file.label}</Text>
-                  <Space size={4}>
-                    <Button size="small" type="link" onClick={() => downloadTemplate(file.key, "csv")}>
-                      CSV
-                    </Button>
-                    <Button size="small" type="link" onClick={() => downloadTemplate(file.key, "json")}>
-                      JSON
-                    </Button>
-                  </Space>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-            <Col xs={24}>
-              <Card className="nh-card" bodyStyle={{ padding: 16 }}>
-                <div className="nh-upload-label">Upload em lote</div>
-                <div className="nh-upload-meta">
-                  Selecione varios arquivos e o sistema identifica o tipo pelo nome (ex.: prescricoes, medicamentos).
-                </div>
-                <div className="nh-upload-zone">
-                  <Dragger
-                    multiple
-                    accept=".csv,.json"
-                    showUploadList={false}
-                    beforeUpload={() => false}
-                    onChange={handleBatchUpload}
-                  >
-                    <p className="ant-upload-drag-icon">
-                      <CloudUploadOutlined />
-                    </p>
-                    <p className="ant-upload-text">Clique ou arraste varios arquivos</p>
-                    <p className="ant-upload-hint">CSV ou JSON</p>
-                  </Dragger>
-                </div>
-              </Card>
-            </Col>
-            {FILE_TYPES.map((file) => {
-              const target = files[file.key];
-              return (
-                <Col xs={24} md={12} lg={8} key={file.key}>
-                  <Card className="nh-card nh-upload-card" bodyStyle={{ padding: 16 }}>
-                    <div className="nh-upload-label">{file.label}</div>
-                    <div className="nh-upload-meta">Arquivo CSV ou JSON em formato flat.</div>
-                    <div className="nh-upload-zone">
-                      <Dragger
-                        multiple={false}
-                        accept=".csv,.json"
-                        showUploadList={false}
-                        beforeUpload={handleFile(file.key)}
-                      >
-                        <p className="ant-upload-drag-icon">
-                          <CloudUploadOutlined />
-                        </p>
-                        <p className="ant-upload-text">Clique ou arraste o arquivo</p>
-                        <p className="ant-upload-hint">{target ? `${target.name} (${formatBytes(target.size)})` : "Nenhum arquivo"}</p>
-                      </Dragger>
-                    </div>
-                  </Card>
-                </Col>
-              );
-            })}
-          </Row>
-
-          <Divider />
-
-          <Title level={4}>Resumo por arquivo</Title>
-          <div className="nh-summary">
-            {FILE_TYPES.map((file) => {
-              const fileResult = results?.files?.[file.key];
-              const status = fileResult?.status || "warn";
-              const statusClass =
-                status === "ok" ? "nh-status-ok" : status === "warn" ? "nh-status-warn" : "nh-status-error";
-              const icon =
-                status === "ok" ? <CheckCircleOutlined /> : status === "warn" ? <WarningOutlined /> : <ExclamationCircleOutlined />;
-
-              return (
-                <div className="nh-summary-card" key={`summary-${file.key}`}>
-                  <div className="nh-summary-title">{file.label}</div>
-                  <div className={`nh-status-pill ${statusClass}`}>
-                    {icon}
-                    {status === "ok" ? "Sem erros" : status === "warn" ? "Com alertas" : "Com erros"}
-                  </div>
-                  <div className="nh-muted" style={{ marginTop: 8 }}>
-                    Registros: {fileResult?.recordCount ?? "-"}
-                  </div>
-                  <div className="nh-muted">Colunas: {fileResult?.columnCount ?? "-"}</div>
-                  {fileResult ? <div className="nh-muted">Erros: {fileResult.issueCount ?? 0}</div> : null}
-                  {fileResult?.malformedRowCount ? (
-                    <div className="nh-muted">Linhas com colunas fora do padrao: {fileResult.malformedRowCount}</div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-
-          <Divider />
-
-          <Title level={4}>Detalhes da validacao</Title>
-          <Collapse
-            accordion
-            items={FILE_TYPES.map((file) => {
-              const fileResult = results?.files?.[file.key];
-              const groups = fileResult?.issueGroups || [];
-              const issues = fileResult?.issues || [];
-              const hints = fileResult?.hints || [];
-              const warnings = fileResult?.warnings || [];
-              const issueCount = fileResult?.issueCount ?? issues.length;
-              return {
-                key: file.key,
-                label: (
-                  <Space size={8}>
-                    <span>{file.label}</span>
-                    {issueCount > 0 && <Tag color="red">{issueCount} erro(s)</Tag>}
-                    {warnings.length > 0 && <Tag color="gold">{warnings.length} alerta(s)</Tag>}
-                  </Space>
-                ),
-                children: (
-                  <div>
-                    {issueCount === 0 && warnings.length === 0 ? (
-                      <Alert message="Nenhum erro encontrado." type="success" showIcon />
-                    ) : (
-                      <>
-                        {hints.length > 0 && (
-                          <Alert
-                            style={{ marginBottom: 12 }}
-                            type="info"
-                            showIcon
-                            icon={<BulbOutlined />}
-                            message="Dicas: provavelmente e o arquivo, nao o dado"
-                            description={
-                              <div className="nh-hints">
-                                {hints.map((hint) => (
-                                  <div className="nh-hint" key={`${file.key}-${hint.key}`}>
-                                    <Text strong>{hint.title}</Text>
-                                    <div className="nh-muted">{hint.detail}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            }
-                          />
-                        )}
-                        {groups.length > 0 ? (
-                          <>
-                            <Text strong>Erros ({issueCount} ocorrencia(s) em {groups.length} tipo(s))</Text>
-                            <List
-                              size="small"
-                              dataSource={groups}
-                              renderItem={(group) => (
-                                <List.Item>
-                                  <div>
-                                    <Space size={8} align="start">
-                                      <Tag color={group.count > 1 ? "red" : "orange"}>{group.count}x</Tag>
-                                      <Text>{group.message}</Text>
-                                    </Space>
-                                    {group.samples && group.samples.length > 0 && (
-                                      <div className="nh-issue-samples">
-                                        {group.samples.map((sample, idx) => (
-                                          <div key={`${group.message}-${idx}`}>{sample}</div>
-                                        ))}
-                                        {group.count > group.samples.length && (
-                                          <div>... e outras {group.count - group.samples.length} ocorrencia(s)</div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </List.Item>
-                              )}
-                            />
-                          </>
-                        ) : (
-                          issues.length > 0 && (
-                            <>
-                              <Text strong>Erros</Text>
-                              <List size="small" dataSource={issues} renderItem={(item) => <List.Item>{item}</List.Item>} />
-                            </>
-                          )
-                        )}
-                        {warnings.length > 0 && (
-                          <>
-                            <Text strong style={{ display: "block", marginTop: 12 }}>
-                              Alertas
-                            </Text>
-                            <List size="small" dataSource={warnings} renderItem={(item) => <List.Item>{item}</List.Item>} />
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ),
-              };
-            })}
+          <Menu
+            mode="inline"
+            selectedKeys={[menuKey]}
+            onClick={handleMenu}
+            items={[
+              { key: "inicio", icon: <HomeOutlined />, label: "Inicio" },
+              { key: "validacao", icon: <FileSearchOutlined />, label: "Validacao" },
+              { key: "dados", icon: <DatabaseOutlined />, label: "Dados salvos" },
+              { key: "referencia", icon: <ReadOutlined />, label: "Referencia" },
+            ]}
           />
+        </Sider>
 
-          <Divider />
+        <Layout>
+          <Content className="nh-content">
+            {screen === "welcome" && (
+              <WelcomeScreen
+                progress={progress}
+                onStart={handleStart}
+                onResume={handleResume}
+                onRestart={handleRestart}
+              />
+            )}
 
-          <Title level={4}>Campos esperados (padrao NoHarm)</Title>
-          <Text className="nh-muted" style={{ display: "block", marginBottom: 8 }}>
-            Lista unificada de campos aceitos nos formatos MV, Tasy e Create.
-          </Text>
-          <Row gutter={[16, 16]}>
-            {schemaPreview.map((info) => (
-              <Col xs={24} md={12} key={`schema-${info.key}`}>
-                <Card className="nh-card" bodyStyle={{ padding: 16 }}>
-                  <Text strong>{info.label}</Text>
-                  <div className="nh-muted" style={{ marginTop: 8, marginBottom: 8 }}>
-                    Campos esperados ({info.fields.length})
-                  </div>
-                  {info.groups ? (
-                    Object.entries(info.groups).map(([group, fields]) => (
-                      <div key={`${info.key}-${group}`} style={{ marginBottom: 12 }}>
-                        <Text className="nh-muted" strong style={{ display: "block", marginBottom: 6 }}>
-                          {group}
-                        </Text>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                          {fields.map((field) => (
-                            <Tag key={`${group}-${field}`}>{field}</Tag>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {info.fields.map((field) => (
-                        <Tag key={field}>{field}</Tag>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              </Col>
-            ))}
-          </Row>
+            {screen === "steps" && current && (
+              <div className="nh-wizard">
+                <Timeline groupKey={current.group} position={groupPosition} total={groupSteps.length} />
 
-          <div className="nh-footer-note">
-            Validacao semantica inclui chaves duplicadas e referencias cruzadas entre prescricoes, pessoa/atendimento,
-            medicamentos, setores, unidades, frequencia, exames, alergias e culturas.
-          </div>
-        </Content>
+                {current.type === "ask" ? (
+                  <AskStep
+                    groupKey={current.group}
+                    options={current.options}
+                    chosen={askChoice}
+                    onToggle={(key) =>
+                      setAskChoice((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+                    }
+                    onContinue={handleAskContinue}
+                    onBack={handleBack}
+                  />
+                ) : (
+                  <>
+                    <StepPanel
+                      step={FILE_TYPES.find((file) => file.key === current.key)}
+                      isLast={isLast}
+                      savedStep={savedStep}
+                      stepFile={stepFile}
+                      stepResult={stepResult}
+                      busy={busy}
+                      desvio={desvio && desvio.corrigindo === current.key ? desvio : null}
+                      onExplainHospital={() => setHospitalOpen(true)}
+                      onFixRef={handleFixRef}
+                      onUpload={handleStepUpload}
+                      onContinue={handleContinue}
+                      onSkip={handleSkip}
+                      onBack={handleBack}
+                      onRedo={() => handleRedo(current.key)}
+                      onFinish={() => goToScreen("review", "validacao")}
+                      onShowFields={() => setFieldsOpen(true)}
+                    />
+                    <FieldsModal fileKey={current.key} open={fieldsOpen} onClose={() => setFieldsOpen(false)} />
+                    <HospitalModal open={hospitalOpen} onClose={() => setHospitalOpen(false)} />
+                  </>
+                )}
+              </div>
+            )}
+
+            {screen === "review" && (
+              <ReviewScreen
+                progress={progress}
+                onBackToSteps={() => goToScreen("steps", "validacao")}
+                onJump={handleJump}
+                onExport={handleExportReport}
+              />
+            )}
+
+            {screen === "dados" && (
+              <SavedDataScreen
+                progress={progress}
+                onClear={handleClear}
+                onExport={handleExportProgress}
+                onImport={handleImportProgress}
+                onResetStep={handleRedo}
+              />
+            )}
+
+            {screen === "referencia" && <ReferenceScreen />}
+          </Content>
+        </Layout>
       </Layout>
-    </Layout>
+    </ConfigProvider>
   );
 }
 

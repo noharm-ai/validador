@@ -1,7 +1,12 @@
 [
   {
-    "FKHOSPITAL": 1,
+    "FKHOSPITAL": "1",
     "FKFREQUENCIA": "8/8",
     "NOME": "8 em 8 horas"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKFREQUENCIA": "12/12",
+    "NOME": "12 em 12 horas"
   }
 ]

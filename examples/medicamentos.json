@@ -1,13 +1,18 @@
 [
   {
-    "FKHOSPITAL": 1,
-    "ORIGEM": "Medicamentos",
-    "FKMEDICAMENTO": 2001,
+    "FKHOSPITAL": "1",
+    "FKMEDICAMENTO": "2001",
     "NOME": "AMOXICILINA 500MG",
-    "NAOPADRONIZADO": "0",
+    "CUSTO": "1.5",
     "FKUNIDADEMEDIDACUSTO": "MG",
-    "CUSTO_PADRAO": 1.5,
-    "VL_FATOR": 1,
-    "CUSTO": 1.5
+    "NAOPADRONIZADO": "0"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKMEDICAMENTO": "2002",
+    "NOME": "DIPIRONA SODICA 500MG/ML",
+    "CUSTO": "0.75",
+    "FKUNIDADEMEDIDACUSTO": "ML",
+    "NAOPADRONIZADO": "0"
   }
 ]

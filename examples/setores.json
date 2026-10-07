@@ -1,7 +1,12 @@
 [
   {
-    "FKHOSPITAL": 1,
-    "FKSETOR": 10,
+    "FKHOSPITAL": "1",
+    "FKSETOR": "10",
     "NOME": "CLINICA MEDICA"
+  },
+  {
+    "FKHOSPITAL": "1",
+    "FKSETOR": "20",
+    "NOME": "UTI ADULTO"
   }
 ]

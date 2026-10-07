@@ -1,0 +1,22 @@
+[
+  {
+    "FKPESSOA": "5001",
+    "NRATENDIMENTO": "7001",
+    "FKSETOR": "10",
+    "NOMESETOR": "CLINICA MEDICA",
+    "LEITO": "A101",
+    "DTENTRADA": "2026-02-07T09:30:00",
+    "DTSAIDA": "2026-02-08T09:00:00",
+    "AGRUPADA": "1"
+  },
+  {
+    "FKPESSOA": "5002",
+    "NRATENDIMENTO": "7002",
+    "FKSETOR": "20",
+    "NOMESETOR": "UTI ADULTO",
+    "LEITO": "B204",
+    "DTENTRADA": "2026-02-07T14:10:00",
+    "DTSAIDA": "2026-02-08T14:00:00",
+    "AGRUPADA": "1"
+  }
+]
